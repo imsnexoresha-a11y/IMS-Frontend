@@ -1,0 +1,116 @@
+/* ============================================
+   IMS Design System — Neobrutalist Theme Tokens
+   ============================================
+   All design decisions are defined here as CSS
+   custom properties. Components reference tokens
+   exclusively — never hardcode hex/px values.
+   ============================================ */
+
+:root {
+  /* ── Core Palette ── */
+  --color-ink: #2E2E2E;
+  --color-bg: #F1F1F1;
+  --color-accent: #FF5D00; /* Brighter, cooler orange */
+  --color-primary: var(--color-accent); /* Alias for accent */
+  --color-primary-light: #FF9B66; 
+  --color-primary-dark: #E65100;
+  --color-neutral: #BEC3C7;
+  --color-text-secondary: #3B3B3B;
+
+  /* ── Semantic State Colors ──
+     Flat, saturated, neobrutalist-appropriate.
+     Used for status badges, toasts, form validation. */
+  --color-success: #2D9F3F;
+  --color-success-bg: #D9F5E0;
+  --color-error: #E53935;
+  --color-error-bg: #FDECEC;
+  --color-warning: #F9A825;
+  --color-warning-bg: #FFF8E1;
+  --color-info: #1E88E5;
+  --color-info-bg: #E3F2FD;
+
+  /* ── Surfaces ── */
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #F7F7F7;
+  --color-surface-overlay: rgba(0, 0, 0, 0.4);
+
+  /* ── Borders ── */
+  --border-width: 3px;
+  --border-color: var(--color-ink);
+  --border: var(--border-width) solid var(--border-color);
+
+  /* ── Shadows (hard offset, no blur) ── */
+  --shadow-offset: 4px 4px 0px var(--color-ink);
+  --shadow-pressed: 2px 2px 0px var(--color-ink);
+  --shadow-none: 0px 0px 0px var(--color-ink);
+  --shadow-sm: 2px 2px 0px var(--color-ink);
+  --shadow-lg: 6px 6px 0px var(--color-ink);
+
+  /* ── Border Radius ──
+     Neobrutalism: sharp corners by default.
+     2px max if a component absolutely needs it. */
+  --radius-none: 0px;
+  --radius-sm: 2px;
+
+  /* ── Spacing Scale ── */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+
+  /* ── Typography Scale ── */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+  --text-5xl: 3rem;       /* 48px */
+
+  /* ── Font Weights ── */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+  --font-black: 900;
+
+  /* ── Font Family ── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono',
+    'Consolas', 'Courier New', monospace;
+
+  /* ── Line Heights ── */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* ── Transitions ── */
+  --transition-fast: 100ms ease;
+  --transition-base: 150ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ── Z-Index Scale ── */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  /* ── Layout ── */
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 64px;
+  --topbar-height: 60px;
+  --content-max-width: 1400px;
+}

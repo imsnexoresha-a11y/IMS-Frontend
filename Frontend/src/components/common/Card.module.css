@@ -1,0 +1,56 @@
+.card {
+  background-color: var(--color-surface);
+  border: var(--border);
+  box-shadow: var(--shadow-offset);
+  padding: var(--space-lg);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 0 0 15px rgba(255, 111, 32, 0.8), var(--shadow-lg);
+  border-color: var(--color-ink);
+  z-index: 10;
+  position: relative;
+}
+
+.clickable:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-pressed);
+}
+
+.noPadding {
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-md);
+  border-bottom: 2px solid var(--color-ink);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+}
+
+.body {
+  /* allows card body content to fill */
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  margin-top: var(--space-md);
+  border-top: 2px solid var(--color-ink);
+}
