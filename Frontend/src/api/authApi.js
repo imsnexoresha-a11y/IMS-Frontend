@@ -34,7 +34,7 @@ export async function refreshToken() {
 
 export async function registerStudent(data) {
   if (!USE_MOCK) {
-    return apiClient.post('/students', data);
+    return apiClient.post('/auth/register-student', data);
   }
   return mockResponse({
     success: true,

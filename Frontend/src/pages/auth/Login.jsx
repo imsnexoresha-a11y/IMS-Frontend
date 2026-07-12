@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../utils/constants';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import { registerStudent } from '../../api/authApi';
 
 // Gamification Animation Variants
 const staggerContainer = {
@@ -26,21 +27,41 @@ export default function Login() {
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [dob, setDob] = useState('');
+  const [linkedInUrl, setLinkedInUrl] = useState('');
+  const [gitHubUrl, setGitHubUrl] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [showGamifiedSuccess, setShowGamifiedSuccess] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const from = location.state?.from?.pathname;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isRegister) {
-      // Show Gamified Registration Popup before logging in
-      setShowGamifiedSuccess(true);
-      setTimeout(async () => {
-        setShowGamifiedSuccess(false);
-        await proceedWithLogin();
-      }, 3500);
+      try {
+        setIsLoading(true);
+        await registerStudent({
+          name,
+          email,
+          password,
+          dob,
+          linkedInUrl,
+          gitHubUrl
+        });
+        // Show Gamified Registration Popup before logging in
+        setShowGamifiedSuccess(true);
+        setTimeout(async () => {
+          setShowGamifiedSuccess(false);
+          await proceedWithLogin();
+        }, 3500);
+      } catch (err) {
+        alert(err.response?.data?.message || err.message || 'Registration failed');
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
     await proceedWithLogin();
@@ -211,17 +232,17 @@ export default function Login() {
             style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}
           >
             <motion.div variants={itemVariant}>
-              <Input label="Full Name" type="text" placeholder="John Doe" required />
+              <Input label="Full Name" type="text" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} required />
             </motion.div>
             
             <motion.div variants={itemVariant} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
               <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              <Input label="Date of Birth" type="date" required />
+              <Input label="Date of Birth" type="date" value={dob} onChange={(e) => setDob(e.target.value)} required />
             </motion.div>
 
             <motion.div variants={itemVariant} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
-              <Input label="LinkedIn Link" type="url" placeholder="https://linkedin.com/in/..." />
-              <Input label="GitHub Link" type="url" placeholder="https://github.com/..." />
+              <Input label="LinkedIn Link" type="url" placeholder="https://linkedin.com/in/..." value={linkedInUrl} onChange={(e) => setLinkedInUrl(e.target.value)} />
+              <Input label="GitHub Link" type="url" placeholder="https://github.com/..." value={gitHubUrl} onChange={(e) => setGitHubUrl(e.target.value)} />
             </motion.div>
 
             <motion.div variants={itemVariant} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
@@ -258,8 +279,8 @@ export default function Login() {
             </motion.div>
 
             <motion.div variants={itemVariant}>
-              <Button variant="secondary" type="submit" fullWidth style={{ marginTop: 'var(--space-md)', transform: 'scale(1)', transition: 'transform 0.1s' }} onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                Create Account
+              <Button variant="secondary" type="submit" fullWidth disabled={isLoading} style={{ marginTop: 'var(--space-md)', transform: 'scale(1)', transition: 'transform 0.1s' }} onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                {isLoading ? 'Creating...' : 'Create Account'}
               </Button>
             </motion.div>
           </motion.form>

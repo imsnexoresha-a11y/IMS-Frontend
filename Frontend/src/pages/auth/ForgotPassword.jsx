@@ -12,7 +12,7 @@ export default function ForgotPassword() {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { addToast } = useToast();
+  const toast = useToast();
   const navigate = useNavigate();
 
   const handleSendOtp = async (e) => {
@@ -20,26 +20,26 @@ export default function ForgotPassword() {
     setIsLoading(true);
     try {
       await apiClient.post('/auth/send-otp', { email, type: 'forgot_password' });
-      addToast('success', 'OTP sent to your email');
+      toast.success('OTP sent to your email');
       setStep(2);
     } catch (error) {
-      addToast('error', error.response?.data?.message || 'Failed to send OTP');
+      toast.error(error.message || 'Failed to send OTP');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const { login } = useAuth();
+  const { setAuth } = useAuth();
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const response = await apiClient.post('/auth/verify-otp', { email, otp, type: 'forgot_password' });
-      addToast('success', 'OTP verified successfully! You are logged in.');
+      toast.success('OTP verified successfully! You are logged in.');
       // Extract tokens
       if (response && response.accessToken) {
-        login(response.accessToken, response.refreshToken, response.user);
+        setAuth(response.accessToken, response.user);
         
         // Redirect based on role
         if (response.user.role === 'admin') navigate('/admin');
@@ -47,7 +47,7 @@ export default function ForgotPassword() {
         else navigate('/student/profile', { state: { promptPasswordChange: true } });
       }
     } catch (error) {
-      addToast('error', error.message || error.response?.data?.message || 'Invalid OTP');
+      toast.error(error.message || 'Invalid OTP');
     } finally {
       setIsLoading(false);
     }
@@ -56,15 +56,15 @@ export default function ForgotPassword() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      return addToast('error', 'Password must be at least 6 characters');
+      return toast.error('Password must be at least 6 characters');
     }
     setIsLoading(true);
     try {
       await apiClient.post('/auth/reset-password', { email, otp, newPassword, type: 'forgot_password' });
-      addToast('success', 'Password reset successfully. You can now login.');
+      toast.success('Password reset successfully. You can now login.');
       navigate('/login');
     } catch (error) {
-      addToast('error', error.response?.data?.message || 'Failed to reset password');
+      toast.error(error.message || 'Failed to reset password');
     } finally {
       setIsLoading(false);
     }

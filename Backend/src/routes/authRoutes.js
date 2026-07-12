@@ -6,13 +6,15 @@ import {
     changePassword,
     sendOtp,
     verifyOtp,
-    resetPassword
+    resetPassword,
+    registerStudent
 } from '../controller/authController.js';
 import { verifyToken } from '../middleware/auth.js';
 
 const router = Router();
 
 router.post('/login', login);
+router.post('/register-student', registerStudent);
 router.post('/refresh', refresh);
 router.post('/logout', verifyToken, logout);
 router.post('/change-password', verifyToken, changePassword);

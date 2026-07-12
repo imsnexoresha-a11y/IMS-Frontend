@@ -42,14 +42,12 @@ export function AuthProvider({ children }) {
     return localStorage.getItem('ims_token') || (USE_MOCK ? 'mock-jwt-token' : null);
   });
 
-  const login = useCallback(async (email, password) => {
-    const res = await authApi.login({ email, password });
-    const resolvedToken = res.accessToken || res.token;
-    const rawRole = res.user?.role || '';
+  const setAuth = useCallback((resolvedToken, rawUser) => {
+    const rawRole = rawUser?.role || '';
     const normalizedRole = rawRole.toLowerCase() === 'instructor' ? ROLES.TEACHER : rawRole.toLowerCase();
     
     const normalizedUser = {
-      ...res.user,
+      ...rawUser,
       role: normalizedRole
     };
 
@@ -59,6 +57,11 @@ export function AuthProvider({ children }) {
     localStorage.setItem('ims_user', JSON.stringify(normalizedUser));
     return normalizedUser;
   }, []);
+
+  const login = useCallback(async (email, password) => {
+    const res = await authApi.login({ email, password });
+    return setAuth(res.accessToken || res.token, res.user);
+  }, [setAuth]);
 
   const logout = useCallback(async () => {
     try {
@@ -135,12 +138,13 @@ export function AuthProvider({ children }) {
       role,
       isAuthenticated,
       login,
+      setAuth,
       logout,
       switchRole,
       updateUserImage,
       updateUser,
     }),
-    [user, token, role, isAuthenticated, login, logout, switchRole, updateUserImage, updateUser],
+    [user, token, role, isAuthenticated, login, setAuth, logout, switchRole, updateUserImage, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
