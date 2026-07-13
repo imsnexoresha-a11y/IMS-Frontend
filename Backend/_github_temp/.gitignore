@@ -1,9 +1,0 @@
-node_modules
-.env
-dist
-coverage
-*.log
-scratch/
-query
-public/uploads
-seed/
