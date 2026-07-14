@@ -78,27 +78,33 @@ export default function Topbar({ title }) {
               flexDirection: 'column',
               padding: 'var(--space-xxs)'
             }}>
-              <button
-                onClick={() => {
-                  setShowLogout(false);
-                  navigate('/teacher/profile');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: 'var(--space-xs) var(--space-sm)',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontWeight: 'var(--font-bold)',
-                  fontSize: 'var(--text-xs)',
-                  width: '100%'
-                }}
-              >
-                👤 View Profile
-              </button>
+              {role !== 'admin' && (
+                <button
+                  onClick={() => {
+                    setShowLogout(false);
+                    if (role === 'student') {
+                      navigate('/student/profile');
+                    } else if (role === 'teacher') {
+                      navigate('/teacher/profile');
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: 'var(--space-xs) var(--space-sm)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontWeight: 'var(--font-bold)',
+                    fontSize: 'var(--text-xs)',
+                    width: '100%'
+                  }}
+                >
+                  👤 View Profile
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowLogout(false);
