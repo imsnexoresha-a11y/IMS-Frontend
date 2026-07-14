@@ -17,16 +17,35 @@ import { useStudents } from '../../hooks/useStudents';
 import BatchTable from '../../components/admin/BatchTable';
 import CreateBatchForm from '../../components/admin/CreateBatchForm';
 import BatchConfigForm from '../../components/admin/BatchConfigForm';
+import RecruiterLinkManager from '../../components/admin/RecruiterLinkManager';
 
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import RecruiterLinkManager from '../../components/admin/RecruiterLinkManager';
 
 function getBatchId(batch) {
-  return batch?._id || batch?.id;
+  return batch?._id || batch?.id || '';
+}
+
+function getGeneratedUuid(result) {
+  return (
+    result?.recruiterUuid ||
+    result?.uuid ||
+    result?.batch?.recruiterUuid ||
+    result?.recruiterLink?.uuid ||
+    ''
+  );
+}
+
+function getGeneratedUrl(result) {
+  return (
+    result?.recruiterUrl ||
+    result?.url ||
+    result?.recruiterLink?.url ||
+    ''
+  );
 }
 
 export default function AdminBatches() {
@@ -36,21 +55,27 @@ export default function AdminBatches() {
   const [selectedBatch, setSelectedBatch] =
     useState(null);
 
-  const [
-    configBatch,
-    setConfigBatch,
-  ] = useState(null);
+  const [configBatch, setConfigBatch] =
+    useState(null);
 
-  const [
-    batchToClose,
-    setBatchToClose,
-  ] = useState(null);
+  const [batchToClose, setBatchToClose] =
+    useState(null);
 
   const [successMessage, setSuccessMessage] =
     useState('');
 
   const [pageError, setPageError] =
     useState('');
+
+  const [
+    generatingBatchId,
+    setGeneratingBatchId,
+  ] = useState('');
+
+  const [
+    revokingBatchId,
+    setRevokingBatchId,
+  ] = useState('');
 
   const {
     data: batches = [],
@@ -175,7 +200,9 @@ export default function AdminBatches() {
     }
   };
 
-  const handleSaveConfig = async (config) => {
+  const handleSaveConfig = async (
+    config
+  ) => {
     setPageError('');
     setSuccessMessage('');
 
@@ -200,53 +227,100 @@ export default function AdminBatches() {
     }
   };
 
-  const handleGenerateLink = async (batch) => {
+  const handleGenerateLink = async (
+    batch
+  ) => {
+    const batchId = getBatchId(batch);
+
+    if (!batchId) {
+      setPageError(
+        'A valid batch is required to generate a recruiter link.'
+      );
+      return;
+    }
+
     setPageError('');
     setSuccessMessage('');
+    setGeneratingBatchId(batchId);
 
     try {
       const result =
         await generateLinkMutation.mutateAsync(
-          getBatchId(batch)
+          batchId
         );
 
       const uuid =
-        result?.recruiterUuid;
+        getGeneratedUuid(result);
+
+      const returnedUrl =
+        getGeneratedUrl(result);
+
+      const recruiterUrl =
+        returnedUrl ||
+        (uuid
+          ? `${window.location.origin}/recruiter/${uuid}`
+          : '');
 
       setSuccessMessage(
-        uuid
-          ? `Recruiter link generated: ${window.location.origin}/recruiter/${uuid}`
-          : 'Recruiter link generated successfully.'
+        recruiterUrl
+          ? `Recruiter link generated: ${recruiterUrl}`
+          : `Recruiter link generated for "${batch.name || 'batch'
+          }".`
       );
+
+      await refetch();
     } catch (mutationError) {
       setPageError(
         mutationError?.message ||
         'Unable to generate recruiter link.'
       );
+    } finally {
+      setGeneratingBatchId('');
     }
   };
 
-  const handleRevokeLink = async (batch) => {
+  const handleRevokeLink = async (
+    batch
+  ) => {
+    const batchId = getBatchId(batch);
+
+    if (!batchId) {
+      setPageError(
+        'A valid batch is required to revoke a recruiter link.'
+      );
+      return;
+    }
+
     setPageError('');
     setSuccessMessage('');
+    setRevokingBatchId(batchId);
 
     try {
       await revokeLinkMutation.mutateAsync(
-        getBatchId(batch)
+        batchId
       );
 
       setSuccessMessage(
-        'Recruiter link revoked successfully.'
+        `Recruiter link revoked for "${batch.name || 'batch'
+        }".`
       );
+
+      await refetch();
     } catch (mutationError) {
       setPageError(
         mutationError?.message ||
         'Unable to revoke recruiter link.'
       );
+    } finally {
+      setRevokingBatchId('');
     }
   };
 
-  if (isLoading || teachersLoading || studentsLoading) {
+  if (
+    isLoading ||
+    teachersLoading ||
+    studentsLoading
+  ) {
     return <p>Loading batches...</p>;
   }
 
@@ -255,8 +329,10 @@ export default function AdminBatches() {
       <Card title="Unable to Load Batches">
         <p
           style={{
-            color: 'var(--color-danger)',
-            marginBottom: 'var(--space-md)',
+            color:
+              'var(--color-danger)',
+            marginBottom:
+              'var(--space-md)',
           }}
         >
           {error?.message ||
@@ -277,10 +353,9 @@ export default function AdminBatches() {
   const processingBatchId =
     closeMutation.isPending
       ? getBatchId(batchToClose)
-      : generateLinkMutation.isPending ||
-        revokeLinkMutation.isPending
-        ? null
-        : null;
+      : generatingBatchId ||
+      revokingBatchId ||
+      '';
 
   return (
     <>
@@ -301,10 +376,12 @@ export default function AdminBatches() {
           <div
             role="alert"
             style={{
-              padding: 'var(--space-sm)',
+              padding:
+                'var(--space-sm)',
               border:
                 '2px solid var(--color-danger)',
-              color: 'var(--color-danger)',
+              color:
+                'var(--color-danger)',
               fontWeight:
                 'var(--font-bold)',
             }}
@@ -324,13 +401,29 @@ export default function AdminBatches() {
           onGenerateLink={
             handleGenerateLink
           }
-          onRevokeLink={handleRevokeLink}
+          onRevokeLink={
+            handleRevokeLink
+          }
           processingBatchId={
             processingBatchId
           }
         />
-        
-        <RecruiterLinkManager />
+
+        <RecruiterLinkManager
+          batches={batches}
+          onGenerate={
+            handleGenerateLink
+          }
+          onRevoke={
+            handleRevokeLink
+          }
+          generatingBatchId={
+            generatingBatchId
+          }
+          revokingBatchId={
+            revokingBatchId
+          }
+        />
       </div>
 
       <Modal
@@ -359,7 +452,9 @@ export default function AdminBatches() {
 
       <Modal
         isOpen={Boolean(configBatch)}
-        onClose={() => setConfigBatch(null)}
+        onClose={() =>
+          setConfigBatch(null)
+        }
         title={
           configBatch
             ? `Configure ${configBatch.name}`
@@ -368,7 +463,9 @@ export default function AdminBatches() {
         size="lg"
       >
         {configLoading ? (
-          <p>Loading configuration...</p>
+          <p>
+            Loading configuration...
+          </p>
         ) : (
           <BatchConfigForm
             config={batchConfig}
@@ -393,8 +490,12 @@ export default function AdminBatches() {
         }
         confirmLabel="Close Batch"
         variant="danger"
-        loading={closeMutation.isPending}
-        onConfirm={handleCloseBatch}
+        loading={
+          closeMutation.isPending
+        }
+        onConfirm={
+          handleCloseBatch
+        }
         onClose={() =>
           setBatchToClose(null)
         }

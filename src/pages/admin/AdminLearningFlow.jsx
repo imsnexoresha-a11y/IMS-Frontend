@@ -1,4 +1,8 @@
-import { useMemo, useState } from 'react';
+import {
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
 
 import Tabs from '../../components/common/Tabs';
 import Select from '../../components/common/Select';
@@ -10,7 +14,6 @@ import AdminTopicForm from '../../components/admin/curriculum/AdminTopicForm';
 import AdminTopicDetails from '../../components/admin/curriculum/AdminTopicDetails';
 
 import AdminLectureList from '../../components/admin/lecture/AdminLectureList';
-import AdminLectureForm from '../../components/admin/lecture/AdminLectureForm';
 
 import AdminAssignmentsPanel from '../../components/admin/assignment/AdminAssignmentsPanel';
 import AdminAttendancePanel from '../../components/admin/attendance/AdminAttendancePanel';
@@ -19,521 +22,931 @@ import AdminCodeReviewPanel from '../../components/admin/progress/AdminCodeRevie
 import AdminScoringPanel from '../../components/admin/progress/AdminScoringPanel';
 import AdminAnalyticsPanel from '../../components/admin/progress/AdminAnalyticsPanel';
 
+import { useBatches } from '../../hooks/useBatches';
+
 import {
-    mockBatches,
-    mockLectures,
-    mockTopics,
-} from '../../api/mockData';
+    useTopics,
+    useCreateTopic,
+    useUpdateTopic,
+    useDeleteTopic,
+    useUploadTopicNotes,
+    useDeleteTopicNote,
+} from '../../hooks/useTopics';
 
-const INITIAL_NOTES = {
-    'topic-001': [
-        {
-            id: 'note-001',
-            filename: 'Week1-Intro-Slides.pdf',
-            uploadedAt: '12 Jan 2026',
-        },
-        {
-            id: 'note-002',
-            filename: 'HTML-Cheatsheet.pdf',
-            uploadedAt: '14 Jan 2026',
-        },
-    ],
-    'topic-002': [
-        {
-            id: 'note-003',
-            filename: 'JavaScript-Core-Notes.pdf',
-            uploadedAt: '19 Jan 2026',
-        },
-        {
-            id: 'note-004',
-            filename: 'Functions-and-Scope.pdf',
-            uploadedAt: '20 Jan 2026',
-        },
-        {
-            id: 'note-005',
-            filename: 'DOM-Practice.docx',
-            uploadedAt: '21 Jan 2026',
-        },
-    ],
-};
+import { useLectures } from '../../hooks/useLectures';
 
-function toDateTimeLocal(dateValue) {
-    if (!dateValue) {
+function getEntityId(value) {
+    if (!value) {
         return '';
     }
 
-    const date = new Date(dateValue);
-
-    if (Number.isNaN(date.getTime())) {
-        return '';
+    if (typeof value === 'string') {
+        return value;
     }
 
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(
-        date.getTime() - offset * 60 * 1000
-    );
+    return value._id || value.id || '';
+}
 
-    return localDate.toISOString().slice(0, 16);
+function getList(response, keys = []) {
+    if (Array.isArray(response)) {
+        return response;
+    }
+
+    for (const key of keys) {
+        if (Array.isArray(response?.[key])) {
+            return response[key];
+        }
+    }
+
+    if (Array.isArray(response?.data)) {
+        return response.data;
+    }
+
+    return [];
+}
+
+function normalizeNote(note) {
+    if (
+        typeof note === 'object' &&
+        note !== null
+    ) {
+        return {
+            ...note,
+
+            id:
+                note.id ||
+                note._id ||
+                note.filename ||
+                note.path ||
+                note.url,
+
+            filename:
+                note.filename ||
+                note.originalName ||
+                note.name ||
+                'Document',
+
+            uploadedAt:
+                note.uploadedAt ||
+                note.createdAt ||
+                null,
+        };
+    }
+
+    const filePath = String(note);
+    const parts = filePath.split('/');
+
+    return {
+        id: parts[parts.length - 1] || filePath,
+
+        filename:
+            parts[parts.length - 1] ||
+            'Document',
+
+        uploadedAt: null,
+
+        url: filePath,
+    };
+}
+
+function normalizeTopic(
+    topic,
+    index,
+    selectedBatchId
+) {
+    const id = getEntityId(topic);
+
+    const notesSource = Array.isArray(
+        topic?.notes
+    )
+        ? topic.notes
+        : Array.isArray(topic?.notesFiles)
+            ? topic.notesFiles
+            : [];
+
+    const notes =
+        notesSource.map(normalizeNote);
+
+    const order =
+        topic?.order ??
+        topic?.orderIndex ??
+        index + 1;
+
+    return {
+        ...topic,
+
+        id,
+        _id: id,
+
+        batchId:
+            getEntityId(topic?.batchId) ||
+            selectedBatchId,
+
+        order,
+        orderIndex: order,
+
+        notes,
+
+        notesCount:
+            topic?.notesCount ??
+            notes.length,
+
+        lectureCount:
+            topic?.lectureCount ??
+            topic?.sessionCount ??
+            0,
+
+        completed:
+            topic?.completed ??
+            String(
+                topic?.status || ''
+            ).toLowerCase() ===
+            'completed',
+    };
+}
+
+function normalizeLecture(lecture) {
+    const id = getEntityId(lecture);
+
+    const rawTopic =
+        lecture?.topicId ||
+        lecture?.topicIds?.[0] ||
+        '';
+
+    const topicId =
+        getEntityId(rawTopic);
+
+    const date =
+        lecture?.date ||
+        lecture?.sessionDateAndTime ||
+        '';
+
+    const status = String(
+        lecture?.status || 'scheduled'
+    )
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/-/g, '_');
+
+    return {
+        ...lecture,
+
+        id,
+        _id: id,
+
+        batchId:
+            getEntityId(lecture?.batchId),
+
+        courseId:
+            getEntityId(lecture?.courseId),
+
+        topicId,
+
+        topicIds:
+            topicId
+                ? [topicId]
+                : [],
+
+        date,
+
+        sessionDateAndTime: date,
+
+        title:
+            lecture?.title ||
+            lecture?.sessionTitle ||
+            'Untitled Lecture',
+
+        meetUrl:
+            lecture?.meetUrl ||
+            lecture?.meetingUrl ||
+            '',
+
+        description:
+            lecture?.description || '',
+
+        status:
+            status === 'inprogress'
+                ? 'in_progress'
+                : status,
+    };
 }
 
 export default function AdminLearningFlow() {
-    const [selectedBatchId, setSelectedBatchId] = useState(
-        mockBatches[0]?.id || ''
-    );
+    const {
+        data: batchesResponse,
+        isLoading: batchesLoading,
+        isError: batchesFailed,
+        error: batchesError,
+        refetch: refetchBatches,
+    } = useBatches();
 
-    const [topics, setTopics] = useState(mockTopics);
-
-    const [lectures, setLectures] = useState(
-        mockLectures.map((lecture) => ({
-            ...lecture,
-            meetUrl:
-                lecture.meetUrl ||
-                'https://meet.google.com/example-meet',
-            description: lecture.description || '',
-        }))
-    );
-
-    const [notesByTopic, setNotesByTopic] =
-        useState(INITIAL_NOTES);
-
-    const [topicModalOpen, setTopicModalOpen] =
-        useState(false);
-
-    const [topicDetailsOpen, setTopicDetailsOpen] =
-        useState(false);
-
-    const [lectureModalOpen, setLectureModalOpen] =
-        useState(false);
-
-    const [editingTopic, setEditingTopic] =
-        useState(null);
-
-    const [selectedTopic, setSelectedTopic] =
-        useState(null);
-
-    const [topicToDelete, setTopicToDelete] =
-        useState(null);
-
-    const [editingLecture, setEditingLecture] =
-        useState(null);
-
-    const [lectureToDelete, setLectureToDelete] =
-        useState(null);
-
-    const batchOptions = mockBatches.map((batch) => ({
-        value: batch.id,
-        label: batch.name,
-    }));
-
-    const selectedBatchTopics = useMemo(
+    const batches = useMemo(
         () =>
-            topics
-                .filter(
-                    (topic) => topic.batchId === selectedBatchId
-                )
-                .sort((a, b) => a.order - b.order),
-        [topics, selectedBatchId]
+            getList(batchesResponse, [
+                'batches',
+                'items',
+            ]),
+        [batchesResponse]
     );
 
-    const selectedBatchLectures = useMemo(
+    const [
+        selectedBatchId,
+        setSelectedBatchId,
+    ] = useState('');
+
+    useEffect(() => {
+        if (
+            selectedBatchId ||
+            batches.length === 0
+        ) {
+            return;
+        }
+
+        const firstBatchId =
+            getEntityId(batches[0]);
+
+        if (firstBatchId) {
+            setSelectedBatchId(
+                firstBatchId
+            );
+        }
+    }, [
+        batches,
+        selectedBatchId,
+    ]);
+
+    const {
+        data: topicsResponse = [],
+        isLoading: topicsLoading,
+        isError: topicsFailed,
+        error: topicsError,
+    } = useTopics(selectedBatchId);
+
+    const {
+        data: lecturesResponse = [],
+        isLoading: lecturesLoading,
+        isError: lecturesFailed,
+        error: lecturesError,
+    } = useLectures(selectedBatchId);
+
+    const createTopicMutation =
+        useCreateTopic();
+
+    const updateTopicMutation =
+        useUpdateTopic();
+
+    const deleteTopicMutation =
+        useDeleteTopic();
+
+    const uploadNotesMutation =
+        useUploadTopicNotes();
+
+    const deleteNoteMutation =
+        useDeleteTopicNote();
+
+    const [
+        topicModalOpen,
+        setTopicModalOpen,
+    ] = useState(false);
+
+    const [
+        topicDetailsOpen,
+        setTopicDetailsOpen,
+    ] = useState(false);
+
+    const [
+        editingTopic,
+        setEditingTopic,
+    ] = useState(null);
+
+    const [
+        selectedTopicId,
+        setSelectedTopicId,
+    ] = useState('');
+
+    const [
+        topicToDelete,
+        setTopicToDelete,
+    ] = useState(null);
+
+    const [
+        topicActionError,
+        setTopicActionError,
+    ] = useState('');
+
+    const [
+        lectureActionError,
+        setLectureActionError,
+    ] = useState('');
+
+    const batchOptions = useMemo(
         () =>
-            lectures
+            batches
+                .map((batch) => ({
+                    value:
+                        getEntityId(batch),
+
+                    label:
+                        batch.name ||
+                        batch.batchName ||
+                        batch.title ||
+                        'Unnamed Batch',
+                }))
                 .filter(
-                    (lecture) =>
-                        lecture.batchId === selectedBatchId
-                )
-                .sort(
-                    (first, second) =>
-                        new Date(first.date) -
-                        new Date(second.date)
+                    (option) =>
+                        option.value
                 ),
-        [lectures, selectedBatchId]
+        [batches]
     );
 
-    const selectedTopicNotes = selectedTopic
-        ? notesByTopic[selectedTopic.id] || []
-        : [];
+    const selectedBatchTopics =
+        useMemo(
+            () =>
+                getList(
+                    topicsResponse,
+                    [
+                        'topics',
+                        'items',
+                    ]
+                )
+                    .map(
+                        (
+                            topic,
+                            index
+                        ) =>
+                            normalizeTopic(
+                                topic,
+                                index,
+                                selectedBatchId
+                            )
+                    )
+                    .sort(
+                        (
+                            first,
+                            second
+                        ) =>
+                            (first.order ||
+                                0) -
+                            (second.order ||
+                                0)
+                    ),
+            [
+                topicsResponse,
+                selectedBatchId,
+            ]
+        );
+
+    const selectedBatchLectures =
+        useMemo(
+            () =>
+                getList(
+                    lecturesResponse,
+                    [
+                        'lectures',
+                        'sessions',
+                        'items',
+                    ]
+                )
+                    .map(
+                        normalizeLecture
+                    )
+                    .sort(
+                        (
+                            first,
+                            second
+                        ) =>
+                            new Date(
+                                first.date
+                            ) -
+                            new Date(
+                                second.date
+                            )
+                    ),
+            [lecturesResponse]
+        );
+
+    const selectedTopic = useMemo(
+        () =>
+            selectedBatchTopics.find(
+                (topic) =>
+                    getEntityId(topic) ===
+                    selectedTopicId
+            ) || null,
+        [
+            selectedBatchTopics,
+            selectedTopicId,
+        ]
+    );
 
     const openCreateTopicModal = () => {
         setEditingTopic(null);
+        setTopicActionError('');
         setTopicModalOpen(true);
     };
 
     const openEditTopicModal = (topic) => {
         setEditingTopic(topic);
+        setTopicActionError('');
         setTopicModalOpen(true);
     };
 
     const closeTopicModal = () => {
         setEditingTopic(null);
         setTopicModalOpen(false);
+        setTopicActionError('');
     };
 
     const openTopicDetails = (topic) => {
-        setSelectedTopic(topic);
+        setSelectedTopicId(
+            getEntityId(topic)
+        );
+
+        setTopicActionError('');
         setTopicDetailsOpen(true);
     };
 
     const closeTopicDetails = () => {
-        setSelectedTopic(null);
+        setSelectedTopicId('');
         setTopicDetailsOpen(false);
     };
 
-    const openCreateLectureModal = () => {
-        setEditingLecture(null);
-        setLectureModalOpen(true);
+    const handleBatchChange = (event) => {
+        setSelectedBatchId(
+            event.target.value
+        );
+
+        closeTopicDetails();
+        closeTopicModal();
+
+        setTopicToDelete(null);
+        setTopicActionError('');
+        setLectureActionError('');
     };
 
-    const openEditLectureModal = (lecture) => {
-        setEditingLecture(lecture);
-        setLectureModalOpen(true);
-    };
-
-    const closeLectureModal = () => {
-        setEditingLecture(null);
-        setLectureModalOpen(false);
-    };
-
-    const handleSaveTopic = async (formData) => {
-        if (editingTopic) {
-            setTopics((currentTopics) =>
-                currentTopics.map((topic) =>
-                    topic.id === editingTopic.id
-                        ? {
-                            ...topic,
-                            title: formData.title,
-                            description: formData.description,
-                        }
-                        : topic
-                )
+    const handleSaveTopic = async (
+        formData
+    ) => {
+        if (!selectedBatchId) {
+            setTopicActionError(
+                'Please select a batch first.'
             );
-        } else {
-            const newTopic = {
-                id: `topic-${Date.now()}`,
-                batchId: selectedBatchId,
-                title: formData.title,
-                description: formData.description,
-                order: selectedBatchTopics.length + 1,
-                lectureCount: 0,
-                notesCount: 0,
-                completed: false,
-            };
 
-            setTopics((currentTopics) => [
-                ...currentTopics,
-                newTopic,
-            ]);
+            return;
         }
 
-        closeTopicModal();
+        const title =
+            formData.title.trim();
+
+        const description =
+            formData.description?.trim() ||
+            `Introduction and learning material for ${title}.`;
+
+        const data = {
+            title,
+            description,
+            estimatedHours: 1,
+
+            learningObjectives: [
+                `Understand the main concepts of ${title}.`,
+            ],
+        };
+
+        setTopicActionError('');
+
+        try {
+            if (editingTopic) {
+                await updateTopicMutation.mutateAsync(
+                    {
+                        batchId:
+                            selectedBatchId,
+
+                        topicId:
+                            getEntityId(
+                                editingTopic
+                            ),
+
+                        data,
+                    }
+                );
+            } else {
+                await createTopicMutation.mutateAsync(
+                    {
+                        batchId:
+                            selectedBatchId,
+
+                        data,
+                    }
+                );
+            }
+
+            closeTopicModal();
+        } catch (error) {
+            setTopicActionError(
+                error?.message ||
+                'Unable to save topic.'
+            );
+        }
     };
 
-    const handleDeleteTopic = () => {
+    const handleDeleteTopic = async () => {
         if (!topicToDelete) {
             return;
         }
 
-        setTopics((currentTopics) => {
-            const remainingTopics = currentTopics.filter(
-                (topic) => topic.id !== topicToDelete.id
-            );
+        const topicId =
+            getEntityId(topicToDelete);
 
-            const reorderedBatchTopics = remainingTopics
-                .filter(
-                    (topic) =>
-                        topic.batchId === topicToDelete.batchId
-                )
-                .sort((a, b) => a.order - b.order)
-                .map((topic, index) => ({
-                    ...topic,
-                    order: index + 1,
-                }));
+        setTopicActionError('');
 
-            return remainingTopics.map((topic) => {
-                const reorderedTopic =
-                    reorderedBatchTopics.find(
-                        (item) => item.id === topic.id
-                    );
-
-                return reorderedTopic || topic;
-            });
-        });
-
-        setNotesByTopic((currentNotes) => {
-            const nextNotes = { ...currentNotes };
-            delete nextNotes[topicToDelete.id];
-            return nextNotes;
-        });
-
-        if (selectedTopic?.id === topicToDelete.id) {
-            closeTopicDetails();
-        }
-
-        setTopicToDelete(null);
-    };
-
-    const handleUploadNote = (file) => {
-        if (!selectedTopic || !file) {
-            return;
-        }
-
-        const newNote = {
-            id: `note-${Date.now()}`,
-            filename: file.name,
-            uploadedAt: new Date().toLocaleDateString(
-                'en-GB',
+        try {
+            await deleteTopicMutation.mutateAsync(
                 {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
+                    batchId:
+                        selectedBatchId,
+
+                    topicId,
                 }
-            ),
-        };
-
-        setNotesByTopic((currentNotes) => ({
-            ...currentNotes,
-            [selectedTopic.id]: [
-                ...(currentNotes[selectedTopic.id] || []),
-                newNote,
-            ],
-        }));
-
-        setTopics((currentTopics) =>
-            currentTopics.map((topic) =>
-                topic.id === selectedTopic.id
-                    ? {
-                        ...topic,
-                        notesCount:
-                            (topic.notesCount || 0) + 1,
-                    }
-                    : topic
-            )
-        );
-    };
-
-    const handleDeleteNote = (noteId) => {
-        if (!selectedTopic) {
-            return;
-        }
-
-        setNotesByTopic((currentNotes) => ({
-            ...currentNotes,
-            [selectedTopic.id]: (
-                currentNotes[selectedTopic.id] || []
-            ).filter((note) => note.id !== noteId),
-        }));
-
-        setTopics((currentTopics) =>
-            currentTopics.map((topic) =>
-                topic.id === selectedTopic.id
-                    ? {
-                        ...topic,
-                        notesCount: Math.max(
-                            (topic.notesCount || 0) - 1,
-                            0
-                        ),
-                    }
-                    : topic
-            )
-        );
-    };
-
-    const handleSaveLecture = async (formData) => {
-        const normalizedDate = new Date(
-            formData.date
-        ).toISOString();
-
-        if (editingLecture) {
-            setLectures((currentLectures) =>
-                currentLectures.map((lecture) =>
-                    lecture.id === editingLecture.id
-                        ? {
-                            ...lecture,
-                            ...formData,
-                            date: normalizedDate,
-                        }
-                        : lecture
-                )
             );
-        } else {
-            const newLecture = {
-                id: `lecture-${Date.now()}`,
-                batchId: selectedBatchId,
-                topicId: formData.topicId,
-                title: formData.title,
-                date: normalizedDate,
-                meetUrl: formData.meetUrl,
-                description: formData.description,
-                status: 'scheduled',
-                attendanceCount: null,
-                avgQuizScore: null,
-                avgAssignmentScore: null,
-            };
 
-            setLectures((currentLectures) => [
-                ...currentLectures,
-                newLecture,
-            ]);
+            if (
+                selectedTopicId ===
+                topicId
+            ) {
+                closeTopicDetails();
+            }
 
-            setTopics((currentTopics) =>
-                currentTopics.map((topic) =>
-                    topic.id === formData.topicId
-                        ? {
-                            ...topic,
-                            lectureCount:
-                                (topic.lectureCount || 0) + 1,
-                        }
-                        : topic
-                )
+            setTopicToDelete(null);
+        } catch (error) {
+            setTopicActionError(
+                error?.message ||
+                'Unable to delete topic.'
             );
-        }
 
-        closeLectureModal();
+            setTopicToDelete(null);
+        }
     };
 
-    const handleLectureStatusChange = (
-        lectureId,
-        status
+    const handleUploadNote = async (
+        file
     ) => {
-        setLectures((currentLectures) =>
-            currentLectures.map((lecture) =>
-                lecture.id === lectureId
-                    ? {
-                        ...lecture,
-                        status,
-                    }
-                    : lecture
-            )
-        );
-    };
-
-    const handleDeleteLecture = () => {
-        if (!lectureToDelete) {
+        if (
+            !selectedTopic ||
+            !file
+        ) {
             return;
         }
 
-        setLectures((currentLectures) =>
-            currentLectures.filter(
-                (lecture) =>
-                    lecture.id !== lectureToDelete.id
-            )
+        const formData =
+            new FormData();
+
+        formData.append(
+            'notes',
+            file
         );
 
-        setTopics((currentTopics) =>
-            currentTopics.map((topic) =>
-                topic.id === lectureToDelete.topicId
-                    ? {
-                        ...topic,
-                        lectureCount: Math.max(
-                            (topic.lectureCount || 0) - 1,
-                            0
+        setTopicActionError('');
+
+        try {
+            await uploadNotesMutation.mutateAsync(
+                {
+                    batchId:
+                        selectedBatchId,
+
+                    topicId:
+                        getEntityId(
+                            selectedTopic
                         ),
-                    }
-                    : topic
-            )
-        );
 
-        setLectureToDelete(null);
+                    formData,
+                }
+            );
+        } catch (error) {
+            setTopicActionError(
+                error?.message ||
+                'Unable to upload note.'
+            );
+        }
+    };
+
+    const handleDeleteNote = async (
+        noteId
+    ) => {
+        if (
+            !selectedTopic ||
+            !noteId
+        ) {
+            return;
+        }
+
+        setTopicActionError('');
+
+        try {
+            await deleteNoteMutation.mutateAsync(
+                {
+                    batchId:
+                        selectedBatchId,
+
+                    topicId:
+                        getEntityId(
+                            selectedTopic
+                        ),
+
+                    fileId: noteId,
+                }
+            );
+        } catch (error) {
+            setTopicActionError(
+                error?.message ||
+                'Unable to delete note.'
+            );
+        }
+    };
+
+    const showAdminLectureRestriction = () => {
+        setLectureActionError(
+            'Lecture changes require an instructor profile and are currently unavailable for Admin users.'
+        );
     };
 
     const tabs = [
         {
-            label: 'Curriculum & Topics',
+            label:
+                'Curriculum & Topics',
+
             content: (
-                <AdminTopicList
-                    topics={selectedBatchTopics}
-                    onAdd={openCreateTopicModal}
-                    onSelect={openTopicDetails}
-                    onEdit={openEditTopicModal}
-                    onDelete={setTopicToDelete}
-                />
+                <>
+                    {topicActionError && (
+                        <div
+                            role="alert"
+                            style={{
+                                marginBottom:
+                                    'var(--space-md)',
+
+                                padding:
+                                    'var(--space-sm)',
+
+                                border:
+                                    '2px solid var(--color-danger)',
+
+                                color:
+                                    'var(--color-danger)',
+
+                                fontWeight:
+                                    'var(--font-bold)',
+                            }}
+                        >
+                            {topicActionError}
+                        </div>
+                    )}
+
+                    {topicsLoading ? (
+                        <p>
+                            Loading topics...
+                        </p>
+                    ) : topicsFailed ? (
+                        <p
+                            style={{
+                                color:
+                                    'var(--color-danger)',
+                            }}
+                        >
+                            {topicsError?.message ||
+                                'Unable to load topics.'}
+                        </p>
+                    ) : (
+                        <AdminTopicList
+                            topics={
+                                selectedBatchTopics
+                            }
+                            onAdd={
+                                openCreateTopicModal
+                            }
+                            onSelect={
+                                openTopicDetails
+                            }
+                            onEdit={
+                                openEditTopicModal
+                            }
+                            onDelete={
+                                setTopicToDelete
+                            }
+                        />
+                    )}
+                </>
             ),
         },
+
         {
             label: 'Lectures',
+
             content: (
-                <AdminLectureList
-                    lectures={selectedBatchLectures}
-                    topics={selectedBatchTopics}
-                    onAdd={openCreateLectureModal}
-                    onEdit={openEditLectureModal}
-                    onDelete={setLectureToDelete}
-                    onStatusChange={
-                        handleLectureStatusChange
+                <>
+                    {lectureActionError && (
+                        <div
+                            role="alert"
+                            style={{
+                                marginBottom:
+                                    'var(--space-md)',
+
+                                padding:
+                                    'var(--space-sm)',
+
+                                border:
+                                    '2px solid var(--color-warning)',
+
+                                color:
+                                    'var(--color-text-primary)',
+
+                                fontWeight:
+                                    'var(--font-bold)',
+                            }}
+                        >
+                            {lectureActionError}
+                        </div>
+                    )}
+
+                    {lecturesLoading ? (
+                        <p>
+                            Loading lectures...
+                        </p>
+                    ) : lecturesFailed ? (
+                        <p
+                            style={{
+                                color:
+                                    'var(--color-danger)',
+                            }}
+                        >
+                            {lecturesError?.message ||
+                                'Unable to load lectures.'}
+                        </p>
+                    ) : (
+                        <AdminLectureList
+                            lectures={
+                                selectedBatchLectures
+                            }
+                            topics={
+                                selectedBatchTopics
+                            }
+                            onAdd={
+                                showAdminLectureRestriction
+                            }
+                            onEdit={
+                                showAdminLectureRestriction
+                            }
+                            onDelete={
+                                showAdminLectureRestriction
+                            }
+                            onStatusChange={
+                                showAdminLectureRestriction
+                            }
+                        />
+                    )}
+                </>
+            ),
+        },
+
+        {
+            label: 'Assignments',
+
+            content: (
+                <AdminAssignmentsPanel
+                    batchId={
+                        selectedBatchId
+                    }
+                    topics={
+                        selectedBatchTopics
+                    }
+                    lectures={
+                        selectedBatchLectures
                     }
                 />
             ),
         },
-        {
-            label: 'Assignments',
-            content: (
-                <AdminAssignmentsPanel
-                    batchId={selectedBatchId}
-                    topics={selectedBatchTopics}
-                    lectures={selectedBatchLectures}
-                />
-            ),
-        },
+
         {
             label: 'Attendance',
+
             content: (
                 <AdminAttendancePanel
-                    batchId={selectedBatchId}
-                    lectures={selectedBatchLectures}
+                    batchId={
+                        selectedBatchId
+                    }
+                    lectures={
+                        selectedBatchLectures
+                    }
                 />
             ),
         },
+
         {
             label: 'Quizzes',
+
             content: (
                 <AdminQuizPanel
-                    batchId={selectedBatchId}
-                    topics={selectedBatchTopics}
-                    lectures={selectedBatchLectures}
+                    batchId={
+                        selectedBatchId
+                    }
+                    topics={
+                        selectedBatchTopics
+                    }
+                    lectures={
+                        selectedBatchLectures
+                    }
                 />
             ),
         },
+
         {
             label: 'Code Reviews',
+
             content: (
                 <AdminCodeReviewPanel
-                    batchId={selectedBatchId}
+                    batchId={
+                        selectedBatchId
+                    }
                 />
             ),
         },
+
         {
             label: 'Scoring Engine',
+
             content: (
                 <AdminScoringPanel
-                    batchId={selectedBatchId}
+                    batchId={
+                        selectedBatchId
+                    }
                 />
             ),
         },
+
         {
             label: 'Analytics',
+
             content: (
                 <AdminAnalyticsPanel
-                    topics={selectedBatchTopics}
-                    lectures={selectedBatchLectures}
+                    topics={
+                        selectedBatchTopics
+                    }
+                    lectures={
+                        selectedBatchLectures
+                    }
                 />
             ),
         },
     ];
+
+    if (batchesLoading) {
+        return (
+            <p>Loading batches...</p>
+        );
+    }
+
+    if (batchesFailed) {
+        return (
+            <div>
+                <p
+                    style={{
+                        color:
+                            'var(--color-danger)',
+                    }}
+                >
+                    {batchesError?.message ||
+                        'Unable to load batches.'}
+                </p>
+
+                <button
+                    type="button"
+                    onClick={() =>
+                        refetchBatches()
+                    }
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
 
     return (
         <>
             <div
                 style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--space-xl)',
+                    flexDirection:
+                        'column',
+                    gap:
+                        'var(--space-xl)',
                 }}
             >
                 <div>
                     <h1
                         style={{
-                            fontSize: 'var(--text-2xl)',
-                            fontWeight: 'var(--font-bold)',
+                            fontSize:
+                                'var(--text-2xl)',
+
+                            fontWeight:
+                                'var(--font-bold)',
                         }}
                     >
                         Learning Management
@@ -541,37 +954,58 @@ export default function AdminLearningFlow() {
 
                     <p
                         style={{
-                            marginTop: 'var(--space-xs)',
+                            marginTop:
+                                'var(--space-xs)',
+
                             color:
                                 'var(--color-text-secondary)',
                         }}
                     >
-                        Manage curriculum, lectures,
-                        assignments, attendance, quizzes,
-                        code reviews, scoring, and analytics.
+                        Review curriculum,
+                        lectures, assignments,
+                        attendance, quizzes,
+                        code reviews, scoring,
+                        and analytics.
                     </p>
                 </div>
 
-                <div style={{ maxWidth: '360px' }}>
-                    <Select
-                        label="Select Batch"
-                        name="batchId"
-                        value={selectedBatchId}
-                        options={batchOptions}
-                        onChange={(event) => {
-                            setSelectedBatchId(
-                                event.target.value
-                            );
-
-                            closeTopicDetails();
+                {batches.length === 0 ? (
+                    <p>
+                        No batches are
+                        available.
+                    </p>
+                ) : (
+                    <div
+                        style={{
+                            maxWidth:
+                                '360px',
                         }}
-                    />
-                </div>
+                    >
+                        <Select
+                            label="Select Batch"
+                            name="batchId"
+                            value={
+                                selectedBatchId
+                            }
+                            options={
+                                batchOptions
+                            }
+                            onChange={
+                                handleBatchChange
+                            }
+                        />
+                    </div>
+                )}
 
                 {selectedBatchId ? (
                     <Tabs tabs={tabs} />
                 ) : (
-                    <p>No batch is available.</p>
+                    batches.length > 0 && (
+                        <p>
+                            Select a batch to
+                            continue.
+                        </p>
+                    )
                 )}
             </div>
 
@@ -585,98 +1019,120 @@ export default function AdminLearningFlow() {
                 }
                 size="md"
             >
+                {topicActionError && (
+                    <div
+                        role="alert"
+                        style={{
+                            marginBottom:
+                                'var(--space-md)',
+
+                            color:
+                                'var(--color-danger)',
+
+                            fontWeight:
+                                'var(--font-bold)',
+                        }}
+                    >
+                        {topicActionError}
+                    </div>
+                )}
+
                 <AdminTopicForm
+                    key={
+                        getEntityId(
+                            editingTopic
+                        ) || 'new-topic'
+                    }
                     defaultValues={
                         editingTopic
                             ? {
-                                title: editingTopic.title,
-                                description:
-                                    editingTopic.description || '',
-                            }
-                            : null
-                    }
-                    onSubmit={handleSaveTopic}
-                    onCancel={closeTopicModal}
-                />
-            </Modal>
+                                title:
+                                    editingTopic.title,
 
-            <Modal
-                isOpen={topicDetailsOpen}
-                onClose={closeTopicDetails}
-                title="Topic Details"
-                size="lg"
-            >
-                <AdminTopicDetails
-                    topic={selectedTopic}
-                    notes={selectedTopicNotes}
-                    onUploadNote={handleUploadNote}
-                    onDeleteNote={handleDeleteNote}
-                />
-            </Modal>
-
-            <Modal
-                isOpen={lectureModalOpen}
-                onClose={closeLectureModal}
-                title={
-                    editingLecture
-                        ? 'Edit Lecture'
-                        : 'Schedule Lecture'
-                }
-                size="md"
-            >
-                <AdminLectureForm
-                    topics={selectedBatchTopics}
-                    defaultValues={
-                        editingLecture
-                            ? {
-                                title: editingLecture.title,
-                                topicId:
-                                    editingLecture.topicId,
-                                date: toDateTimeLocal(
-                                    editingLecture.date
-                                ),
-                                meetUrl:
-                                    editingLecture.meetUrl || '',
                                 description:
-                                    editingLecture.description ||
+                                    editingTopic.description ||
                                     '',
                             }
                             : null
                     }
-                    onSubmit={handleSaveLecture}
-                    onCancel={closeLectureModal}
+                    onSubmit={
+                        handleSaveTopic
+                    }
+                    onCancel={
+                        closeTopicModal
+                    }
+                />
+            </Modal>
+
+            <Modal
+                isOpen={
+                    topicDetailsOpen
+                }
+                onClose={
+                    closeTopicDetails
+                }
+                title="Topic Details"
+                size="lg"
+            >
+                {topicActionError && (
+                    <div
+                        role="alert"
+                        style={{
+                            marginBottom:
+                                'var(--space-md)',
+
+                            color:
+                                'var(--color-danger)',
+
+                            fontWeight:
+                                'var(--font-bold)',
+                        }}
+                    >
+                        {topicActionError}
+                    </div>
+                )}
+
+                <AdminTopicDetails
+                    topic={
+                        selectedTopic
+                    }
+                    notes={
+                        selectedTopic?.notes ||
+                        []
+                    }
+                    onUploadNote={
+                        handleUploadNote
+                    }
+                    onDeleteNote={
+                        handleDeleteNote
+                    }
                 />
             </Modal>
 
             <ConfirmDialog
-                isOpen={Boolean(topicToDelete)}
+                isOpen={Boolean(
+                    topicToDelete
+                )}
                 title="Delete Topic"
                 message={
                     topicToDelete
                         ? `Delete "${topicToDelete.title}"? This action cannot be undone.`
                         : ''
                 }
-                confirmLabel="Delete"
+                confirmLabel={
+                    deleteTopicMutation.isPending
+                        ? 'Deleting...'
+                        : 'Delete'
+                }
                 variant="danger"
-                onConfirm={handleDeleteTopic}
+                loading={
+                    deleteTopicMutation.isPending
+                }
+                onConfirm={
+                    handleDeleteTopic
+                }
                 onCancel={() =>
                     setTopicToDelete(null)
-                }
-            />
-
-            <ConfirmDialog
-                isOpen={Boolean(lectureToDelete)}
-                title="Delete Lecture"
-                message={
-                    lectureToDelete
-                        ? `Delete "${lectureToDelete.title}"? This action cannot be undone.`
-                        : ''
-                }
-                confirmLabel="Delete"
-                variant="danger"
-                onConfirm={handleDeleteLecture}
-                onCancel={() =>
-                    setLectureToDelete(null)
                 }
             />
         </>

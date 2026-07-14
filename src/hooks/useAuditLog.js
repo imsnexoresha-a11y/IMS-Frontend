@@ -3,19 +3,35 @@ import {
   useQuery,
 } from '@tanstack/react-query';
 
-import * as adminApi from '../api/adminApi';
+import * as marksAuditApi from '../api/adminMarksAuditApi';
 
-export function useAuditLog(params = {}) {
+export function useAuditLog(
+  params = {}
+) {
   return useQuery({
-    queryKey: ['auditLog', params],
-    queryFn: () => adminApi.getAuditLog(params),
+    queryKey: [
+      'auditLog',
+      params,
+    ],
+
+    queryFn: () =>
+      marksAuditApi.getAuditLog(
+        params
+      ),
+
     staleTime: 15 * 1000,
+
     retry: 1,
+
+    placeholderData:
+      (previousData) =>
+        previousData,
   });
 }
 
 export function useExportAuditLog() {
   return useMutation({
-    mutationFn: adminApi.exportAuditLog,
+    mutationFn:
+      marksAuditApi.exportAuditLog,
   });
 }
