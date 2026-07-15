@@ -4,7 +4,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-import * as adminApi from '../api/adminApi';
+import * as marksAuditApi from '../api/adminMarksAuditApi';
 import * as studentApi from '../api/studentApi';
 
 function invalidateMarkData(queryClient) {
@@ -12,54 +12,78 @@ function invalidateMarkData(queryClient) {
     queryClient.invalidateQueries({
       queryKey: ['students'],
     }),
+
     queryClient.invalidateQueries({
       queryKey: ['adminDashboard'],
     }),
+
     queryClient.invalidateQueries({
       queryKey: ['auditLog'],
     }),
+
+    queryClient.invalidateQueries({
+      queryKey: ['markOverrides'],
+    }),
+
     queryClient.invalidateQueries({
       queryKey: ['studentDashboard'],
+    }),
+
+    queryClient.invalidateQueries({
+      queryKey: ['marksHistory'],
     }),
   ]);
 }
 
 export function useCreateMarkOverride() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
-    mutationFn: adminApi.createMarkOverride,
+    mutationFn:
+      marksAuditApi.createMarkOverride,
+
     onSuccess: () =>
       invalidateMarkData(queryClient),
   });
 }
 
 export function useCorrectLedgerEvent() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
-    mutationFn: adminApi.correctLedgerEvent,
+    mutationFn:
+      marksAuditApi.correctLedgerEvent,
+
     onSuccess: () =>
       invalidateMarkData(queryClient),
   });
 }
 
 export function useCreateManualScore() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
-    mutationFn: adminApi.createManualScore,
+    mutationFn:
+      marksAuditApi.createManualScore,
+
     onSuccess: () =>
       invalidateMarkData(queryClient),
   });
 }
 
 export function useRecalculateStudent() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
-    mutationFn: ({ studentId, reason }) =>
-      adminApi.recalculateStudent(
+    mutationFn: ({
+      studentId,
+      reason,
+    }) =>
+      marksAuditApi.recalculateStudent(
         studentId,
         reason
       ),
@@ -70,11 +94,15 @@ export function useRecalculateStudent() {
 }
 
 export function useRecalculateBatch() {
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   return useMutation({
-    mutationFn: ({ batchId, reason }) =>
-      adminApi.recalculateBatch(
+    mutationFn: ({
+      batchId,
+      reason,
+    }) =>
+      marksAuditApi.recalculateBatch(
         batchId,
         reason
       ),
@@ -84,16 +112,42 @@ export function useRecalculateBatch() {
   });
 }
 
-export function useMarksHistory(params = {}) {
+export function useMarksHistory(
+  params = {}
+) {
   return useQuery({
-    queryKey: ['marksHistory', params],
-    queryFn: () => studentApi.getMarksHistory(params),
+    queryKey: [
+      'marksHistory',
+      params,
+    ],
+
+    queryFn: () =>
+      studentApi.getMarksHistory(
+        params
+      ),
+
+    staleTime: 30 * 1000,
+
+    retry: 1,
   });
 }
 
-export function useMarkOverrides(params = {}) {
+export function useMarkOverrides(
+  params = {}
+) {
   return useQuery({
-    queryKey: ['markOverrides', params],
-    queryFn: () => adminApi.getMarkOverrides(params),
+    queryKey: [
+      'markOverrides',
+      params,
+    ],
+
+    queryFn: () =>
+      marksAuditApi.getMarkOverrides(
+        params
+      ),
+
+    staleTime: 15 * 1000,
+
+    retry: 1,
   });
 }
