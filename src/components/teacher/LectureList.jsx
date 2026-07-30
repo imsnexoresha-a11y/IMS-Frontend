@@ -17,10 +17,13 @@ import PerLectureSummaryCard from './PerLectureSummaryCard';
 import AssignmentModal from './AssignmentModal';
 import { formatDateTime } from '../../utils/formatters';
 
+import { useToast } from '../common/Toast';
+
 const STATUS_VARIANTS = { scheduled: 'info', in_progress: 'warning', completed: 'success', cancelled: 'error' };
 
 export default function LectureList({ batchId }) {
   const resolvedBatchId = batchId || 'batch-001';
+  const toast = useToast();
 
   // React Queries
   const { data: lectures = [], isLoading, isError } = useLectures(resolvedBatchId);
@@ -47,19 +50,22 @@ export default function LectureList({ batchId }) {
   }
 
   const handleAddLecture = async (data) => {
+    if (createLectureMutation.isPending) return; // Prevent duplicate rapid submission
     try {
       await createLectureMutation.mutateAsync({
         batchId: resolvedBatchId,
         data
       });
       setIsAddOpen(false);
+      if (toast?.success) toast.success('Success', 'Lecture scheduled successfully!');
     } catch (err) {
-      alert(err.message || 'Failed to create session');
+      if (toast?.error) toast.error('Error', err.response?.data?.message || err.message || 'Failed to create session');
+      else alert(err.message || 'Failed to create session');
     }
   };
 
   const handleUpdateLecture = async (data) => {
-    if (!editingLecture) return;
+    if (!editingLecture || updateLectureMutation.isPending) return;
     try {
       await updateLectureMutation.mutateAsync({
         batchId: resolvedBatchId,
@@ -67,8 +73,10 @@ export default function LectureList({ batchId }) {
         data
       });
       setEditingLecture(null);
+      if (toast?.success) toast.success('Success', 'Lecture updated successfully!');
     } catch (err) {
-      alert(err.message || 'Failed to update session');
+      if (toast?.error) toast.error('Error', err.response?.data?.message || err.message || 'Failed to update session');
+      else alert(err.message || 'Failed to update session');
     }
   };
 

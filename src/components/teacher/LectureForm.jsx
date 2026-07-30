@@ -321,12 +321,18 @@ export default function LectureForm({ batchId, onSubmit, onCancel, defaultValues
               {...register('assignmentTitle', { required: attachAssignment ? 'Required' : false })}
             />
             <Input
-              label="Git Repo Template / Seed (Optional)"
+              label="Git Repo Template / Seed (GitHub Only)"
               name="githubRepoSeed"
               type="url"
-              placeholder="https://github.com/..."
+              placeholder="https://github.com/org/repo"
               error={errors.githubRepoSeed?.message}
-              {...register('githubRepoSeed')}
+              {...register('githubRepoSeed', {
+                validate: (val) => {
+                  if (!val || !val.trim()) return true;
+                  const pattern = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/;
+                  return pattern.test(val.trim()) || 'Git Seed URL must be a valid GitHub repository link (e.g. https://github.com/org/repo)';
+                }
+              })}
             />
           </div>
 

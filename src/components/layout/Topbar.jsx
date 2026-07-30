@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import Avatar from '../common/Avatar';
 import RoleBadge from './RoleBadge';
 import NotificationDropdown from './NotificationDropdown';
-import RoleSwitcher from './RoleSwitcher';
 import styles from './Layout.module.css';
 
 import { useNotifications } from '../../hooks/useNotifications';
@@ -30,7 +29,6 @@ export default function Topbar({ title }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-        <RoleSwitcher />
 
         <div style={{ position: 'relative' }}>
           <button
@@ -81,7 +79,16 @@ export default function Topbar({ title }) {
               <button
                 onClick={() => {
                   setShowLogout(false);
-                  navigate('/teacher/profile');
+                  const normalizedRole = role ? role.toLowerCase() : '';
+                  if (normalizedRole === 'student') {
+                    navigate('/student/profile');
+                  } else if (normalizedRole === 'teacher' || normalizedRole === 'instructor') {
+                    navigate('/teacher/profile');
+                  } else if (normalizedRole === 'admin') {
+                    navigate('/admin');
+                  } else {
+                    navigate('/');
+                  }
                 }}
                 style={{
                   display: 'flex',

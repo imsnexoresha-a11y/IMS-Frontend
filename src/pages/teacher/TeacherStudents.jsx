@@ -17,9 +17,11 @@ export default function TeacherStudents() {
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   // Auto-select first batch when loaded
-  if (!selectedBatchId && batches.length > 0) {
-    setSelectedBatchId(batches[0]._id || batches[0].id);
-  }
+  useEffect(() => {
+    if (!selectedBatchId && batches.length > 0) {
+      setSelectedBatchId(batches[0]._id || batches[0].id);
+    }
+  }, [batches, selectedBatchId]);
 
   const { data: studentsData = [], isLoading: loadingStudents } = useBatchStudents(selectedBatchId);
 
