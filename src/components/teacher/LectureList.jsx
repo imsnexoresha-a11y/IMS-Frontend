@@ -16,6 +16,7 @@ import LectureStatusControl from './LectureStatusControl';
 import PerLectureSummaryCard from './PerLectureSummaryCard';
 import AssignmentModal from './AssignmentModal';
 import { formatDateTime } from '../../utils/formatters';
+import { useToast } from '../common/Toast';
 
 const STATUS_VARIANTS = { scheduled: 'info', in_progress: 'warning', completed: 'success', cancelled: 'error' };
 
@@ -24,6 +25,9 @@ export default function LectureList({ batchId }) {
 
   // React Queries
   const { data: lectures = [], isLoading, isError } = useLectures(resolvedBatchId);
+
+  // Toast Notifications
+  const toast = useToast();
 
   // Mutations
   const createLectureMutation = useCreateLecture();
@@ -38,6 +42,8 @@ export default function LectureList({ batchId }) {
   const [summaryLecture, setSummaryLecture] = useState(null);
   const [statusLecture, setStatusLecture] = useState(null);
   const [assignmentLecture, setAssignmentLecture] = useState(null);
+  const [deletingLecture, setDeletingLecture] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Sort lectures chronologically (closest coming at top) and filter by status
   const sortedAndFilteredLectures = useMemo(() => {
@@ -69,8 +75,9 @@ export default function LectureList({ batchId }) {
         data
       });
       setIsAddOpen(false);
+      toast.success('Lecture Scheduled', 'The lecture session has been scheduled successfully.');
     } catch (err) {
-      alert(err.message || 'Failed to create session');
+      toast.error('Failed to Schedule', err.message || 'Failed to create session');
     }
   };
 
@@ -83,29 +90,35 @@ export default function LectureList({ batchId }) {
         data
       });
       setEditingLecture(null);
+      toast.success('Lecture Updated', 'The lecture session details have been updated successfully.');
     } catch (err) {
-      alert(err.message || 'Failed to update session');
+      toast.error('Failed to Update', err.message || 'Failed to update session');
     }
   };
 
-  const handleDeleteLecture = async (lecture) => {
-    if (window.confirm(`Are you sure you want to delete "${lecture.title}"?`)) {
-      try {
-        if (lecture.status === 'in_progress') {
-          await updateStatusMutation.mutateAsync({
-            batchId: resolvedBatchId,
-            lectureId: lecture.id,
-            status: 'cancelled'
-          });
-        } else {
-          await deleteLectureMutation.mutateAsync({
-            batchId: resolvedBatchId,
-            lectureId: lecture.id
-          });
-        }
-      } catch (err) {
-        alert(err.message || 'Failed to delete lecture');
+  const confirmDeleteLecture = async () => {
+    if (!deletingLecture) return;
+    setIsDeleting(true);
+    try {
+      if (deletingLecture.status === 'in_progress') {
+        await updateStatusMutation.mutateAsync({
+          batchId: resolvedBatchId,
+          lectureId: deletingLecture.id,
+          status: 'cancelled'
+        });
+        toast.success('Lecture Cancelled', `"${deletingLecture.title}" status set to cancelled.`);
+      } else {
+        await deleteLectureMutation.mutateAsync({
+          batchId: resolvedBatchId,
+          lectureId: deletingLecture.id
+        });
+        toast.success('Lecture Deleted', `"${deletingLecture.title}" has been deleted successfully.`);
       }
+      setDeletingLecture(null);
+    } catch (err) {
+      toast.error('Deletion Failed', err.message || 'Failed to delete lecture');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -117,8 +130,9 @@ export default function LectureList({ batchId }) {
         status
       });
       setStatusLecture(null);
+      toast.success('Status Updated', 'Lecture status updated successfully.');
     } catch (err) {
-      alert(err.message || 'Failed to update lecture status');
+      toast.error('Status Update Failed', err.message || 'Failed to update lecture status');
     }
   };
 
@@ -188,7 +202,7 @@ export default function LectureList({ batchId }) {
             size="sm"
             variant="danger"
             label="Delete Lecture"
-            onClick={() => handleDeleteLecture(row)}
+            onClick={() => setDeletingLecture(row)}
           />
         </div>
       )
@@ -302,6 +316,30 @@ export default function LectureList({ batchId }) {
           onClose={() => setAssignmentLecture(null)}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={!!deletingLecture} onClose={() => !isDeleting && setDeletingLecture(null)} title="Confirm Deletion">
+        {deletingLecture && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            <p style={{ fontSize: 'var(--text-sm)' }}>
+              Are you sure you want to delete <strong>"{deletingLecture.title}"</strong>?
+            </p>
+            {deletingLecture.status === 'in_progress' && (
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-warning)', fontWeight: 'var(--font-bold)' }}>
+                Note: Since this lecture is currently in progress, deleting it will set its status to Cancelled.
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-sm)' }}>
+              <Button variant="ghost" onClick={() => setDeletingLecture(null)} disabled={isDeleting}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={confirmDeleteLecture} disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete Lecture'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
