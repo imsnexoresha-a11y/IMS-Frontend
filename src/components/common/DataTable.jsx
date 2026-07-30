@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import SearchBar from './SearchBar';
 import Pagination from './Pagination';
@@ -56,7 +56,15 @@ export default function DataTable({
   }, [filtered, sortKey, sortDir]);
 
   // Paginate
-  const totalPages = Math.ceil(sorted.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+
+  // Reset page to 1 if filtering or data changes reduce total pages below currentPage
+  useEffect(() => {
+    if (currentPage > 1 && currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
   const paginated = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleSort = (key) => {
