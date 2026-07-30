@@ -120,73 +120,85 @@ export default function StudentAssignments({ assignments: assignmentsProp }) {
           <div style={{ marginBottom: 'var(--space-md)', padding: 'var(--space-sm) var(--space-md)', backgroundColor: 'var(--color-surface)', border: 'var(--border)', boxShadow: 'var(--shadow-sm)', display: 'inline-block', fontWeight: 'bold' }}>
             Today's Date: <span style={{ color: 'var(--color-primary)' }}>{new Date().toLocaleDateString()}</span>
           </div>
-          {assignments.map((assignment) => (
-            <motion.div
-              key={assignment.id || assignment._id}
-              whileHover={{ scale: 1.01 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <Card title={assignment.title} className="student-block-hover">
-                <p>{assignment.description || assignment.task}</p>
-                <div style={{ marginTop: 'var(--space-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                    Deadline: {new Date(assignment.submissionDeadline || assignment.deadline || assignment.dueDate).toLocaleDateString()}
+          {assignments.map((assignment) => {
+            const rawDeadline = assignment.submissionDeadline || assignment.deadline || assignment.dueDate;
+            const isSubmitted = assignment.status === 'submitted' || assignment.status === 'reviewed' || assignment.submitted;
+            const isOverdue = rawDeadline && new Date(rawDeadline) < new Date() && !isSubmitted;
+            const isSelected = selectedAssignment?.id === (assignment.id || assignment._id);
+
+            return (
+              <motion.div
+                key={assignment.id || assignment._id}
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Card title={assignment.title} className="student-block-hover">
+                  <p>{assignment.description || assignment.task}</p>
+                  <div style={{ marginTop: 'var(--space-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 'var(--text-sm)', color: isOverdue ? 'var(--color-danger)' : 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
+                      <span>Deadline: {rawDeadline ? new Date(rawDeadline).toLocaleDateString() : 'N/A'}</span>
+                      {isOverdue && (
+                        <span className="badge-gamified" style={{ backgroundColor: 'var(--color-danger)', color: 'white', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)' }}>
+                          Overdue
+                        </span>
+                      )}
+                    </div>
+
+                    {isSubmitted ? (
+                      <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
+                        <span className="badge-gamified" style={{ backgroundColor: 'var(--color-success)', color: 'white', padding: 'var(--space-xs) var(--space-sm)', borderRadius: 'var(--radius-sm)' }}>
+                          {assignment.status === 'reviewed' ? 'Reviewed' : 'Submitted'}
+                        </span>
+                        {assignment.score !== undefined && assignment.score !== null && (
+                          <span style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>Marks: {assignment.score}</span>
+                        )}
+                        <Button
+                          variant="secondary"
+                          onClick={() => setSelectedAssignment(isSelected ? null : assignment)}
+                        >
+                          {isSelected ? 'Cancel' : 'Review & Resubmit'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        onClick={() => setSelectedAssignment(isSelected ? null : assignment)}
+                      >
+                        {isSelected ? 'Cancel' : 'Submit Task'}
+                      </Button>
+                    )}
                   </div>
 
-                  {assignment.status === 'submitted' || assignment.status === 'reviewed' || assignment.submitted ? (
-                    <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
-                      <span className="badge-gamified" style={{ backgroundColor: 'var(--color-success)', color: 'white', padding: 'var(--space-xs) var(--space-sm)', borderRadius: 'var(--radius-sm)' }}>
-                        {assignment.status === 'reviewed' ? 'Reviewed' : 'Submitted'}
-                      </span>
-                      {assignment.score !== undefined && assignment.score !== null && (
-                        <span style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>Marks: {assignment.score}</span>
-                      )}
-                      <Button
-                        variant="secondary"
-                        onClick={() => setSelectedAssignment(selectedAssignment?.id === (assignment.id || assignment._id) ? null : assignment)}
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        style={{ overflow: 'hidden' }}
                       >
-                        {selectedAssignment?.id === (assignment.id || assignment._id) ? 'Cancel' : 'Review & Resubmit'}
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      onClick={() => setSelectedAssignment(selectedAssignment?.id === (assignment.id || assignment._id) ? null : assignment)}
-                    >
-                      {selectedAssignment?.id === (assignment.id || assignment._id) ? 'Cancel' : 'Submit Task'}
-                    </Button>
-                  )}
-                </div>
-
-                <AnimatePresence>
-                  {selectedAssignment?.id === (assignment.id || assignment._id) && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      style={{ overflow: 'hidden' }}
-                    >
-                      <div style={{ marginTop: 'var(--space-lg)', padding: 'var(--space-md)', backgroundColor: 'var(--color-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                        <form onSubmit={(e) => handleSubmit(e, assignment.id || assignment._id)} style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                          <div style={{ flex: 1 }}>
-                            <Input
-                              placeholder="https://github.com/your-username/repo"
-                              value={githubUrl}
-                              onChange={(e) => setGithubUrl(e.target.value)}
-                              required
-                            />
-                          </div>
-                          <Button type="submit" variant="primary" disabled={submitting}>
-                            {submitting ? 'Submitting...' : 'Submit 🚀'}
-                          </Button>
-                        </form>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Card>
-            </motion.div>
-          ))}
+                        <div style={{ marginTop: 'var(--space-lg)', padding: 'var(--space-md)', backgroundColor: 'var(--color-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+                          <form onSubmit={(e) => handleSubmit(e, assignment.id || assignment._id)} style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                            <div style={{ flex: 1 }}>
+                              <Input
+                                placeholder="https://github.com/your-username/repo"
+                                value={githubUrl}
+                                onChange={(e) => setGithubUrl(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <Button type="submit" variant="primary" disabled={submitting}>
+                              {submitting ? 'Submitting...' : 'Submit 🚀'}
+                            </Button>
+                          </form>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              </motion.div>
+            );
+          })}
         </>
       )}
     </div>

@@ -41,7 +41,7 @@ export default function LectureForm({ batchId, onSubmit, onCancel, defaultValues
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: defaultValues || {
       courseId: '',
@@ -105,7 +105,7 @@ export default function LectureForm({ batchId, onSubmit, onCancel, defaultValues
     }
   };
 
-  const handleFormSubmit = (data) => {
+  const handleFormSubmit = async (data) => {
     // Combine date and startTime into a valid ISO8601 string
     let sessionDateAndTime = data.sessionDateAndTime;
     if (data.sessionDateAndTime && data.startTime) {
@@ -145,7 +145,7 @@ export default function LectureForm({ batchId, onSubmit, onCancel, defaultValues
       delete payload.githubRepoSeed;
     }
 
-    onSubmit(payload);
+    await onSubmit(payload);
   };
 
   return (
@@ -365,9 +365,11 @@ export default function LectureForm({ batchId, onSubmit, onCancel, defaultValues
       )}
 
       <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
-        <Button variant="ghost" type="button" onClick={onCancel}>Cancel</Button>
-        <Button variant="primary" type="submit">
-          {defaultValues ? 'Update' : 'Schedule'} Lecture
+        <Button variant="ghost" type="button" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+        <Button variant="primary" type="submit" disabled={isSubmitting}>
+          {isSubmitting
+            ? (defaultValues ? 'Updating...' : 'Scheduling...')
+            : `${defaultValues ? 'Update' : 'Schedule'} Lecture`}
         </Button>
       </div>
 

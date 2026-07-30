@@ -538,11 +538,19 @@ export default function AdminAssignmentsPanel({
         {
             key: 'status',
             label: 'Status',
-            render: () => (
-                <Badge variant="success" dot>
-                    Published
-                </Badge>
-            ),
+            render: (value, row) => {
+                const isPastDue = row.dueDate && new Date(row.dueDate) < new Date();
+                const displayStatus = isPastDue && value === 'published' ? 'overdue' : (value || 'published');
+                const variant = displayStatus === 'overdue' ? 'error' : (displayStatus === 'published' ? 'success' : 'neutral');
+                return (
+                    <Badge
+                        variant={variant}
+                        dot
+                    >
+                        {displayStatus === 'overdue' ? 'Overdue' : (displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1))}
+                    </Badge>
+                );
+            },
         },
     ];
 
