@@ -295,7 +295,7 @@ export default function AdminTeachers() {
                   />
                   <div>
                     <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'bold' }}>{detailsTeacher?.userId?.name || detailsTeacher?.name || 'Unknown'}</h3>
-                    <p style={{ color: 'var(--color-text-secondary)' }}>{detailsTeacher?.userId?.email || detailsTeacher?.email || 'No email'} | {detailsTeacher?.userId?.phone || detailsTeacher?.phone || 'No phone'}</p>
+                    <p style={{ color: 'var(--color-text-secondary)' }}>{detailsTeacher?.userId?.email || detailsTeacher?.email || 'No email'} | {detailsTeacher?.mobileNo || detailsTeacher?.userId?.mobileNo || detailsTeacher?.phone || detailsTeacher?.userId?.phone || 'No mobile'}</p>
                   </div>
                 </div>
                 
