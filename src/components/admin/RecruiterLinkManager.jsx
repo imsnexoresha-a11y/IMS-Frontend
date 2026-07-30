@@ -5,7 +5,9 @@ import {
 } from 'react';
 
 import {
+  Check,
   Copy,
+  ExternalLink,
   Link2,
   Plus,
   Trash2,
@@ -72,6 +74,9 @@ export default function RecruiterLinkManager({
   const [selectedBatchId, setSelectedBatchId] =
     useState('');
 
+  const [copiedBatchId, setCopiedBatchId] =
+    useState('');
+
   const batchOptions = useMemo(
     () =>
       batches
@@ -94,6 +99,7 @@ export default function RecruiterLinkManager({
       setSelectedBatchId(
         batchOptions[0].value
       );
+
       return;
     }
 
@@ -117,8 +123,8 @@ export default function RecruiterLinkManager({
     () =>
       batches.find(
         (batch) =>
-          getBatchId(batch) ===
-          selectedBatchId
+          String(getBatchId(batch)) ===
+          String(selectedBatchId)
       ) || null,
     [batches, selectedBatchId]
   );
@@ -131,8 +137,17 @@ export default function RecruiterLinkManager({
     [batches]
   );
 
+  const selectedBatchAlreadyLinked =
+    Boolean(
+      selectedBatch &&
+      getRecruiterUuid(selectedBatch)
+    );
+
   const handleGenerateSelected = () => {
-    if (!selectedBatch) {
+    if (
+      !selectedBatch ||
+      selectedBatchAlreadyLinked
+    ) {
       return;
     }
 
@@ -141,6 +156,7 @@ export default function RecruiterLinkManager({
 
   const copyLink = async (batch) => {
     const url = getRecruiterUrl(batch);
+    const batchId = getBatchId(batch);
 
     if (!url) {
       return;
@@ -163,6 +179,26 @@ export default function RecruiterLinkManager({
       document.execCommand('copy');
       textarea.remove();
     }
+
+    setCopiedBatchId(batchId);
+
+    window.setTimeout(() => {
+      setCopiedBatchId('');
+    }, 2000);
+  };
+
+  const openRecruiterPage = (batch) => {
+    const url = getRecruiterUrl(batch);
+
+    if (!url) {
+      return;
+    }
+
+    window.open(
+      url,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   return (
@@ -176,14 +212,22 @@ export default function RecruiterLinkManager({
           onClick={handleGenerateSelected}
           disabled={
             !selectedBatchId ||
-            Boolean(generatingBatchId)
+            Boolean(generatingBatchId) ||
+            selectedBatchAlreadyLinked
+          }
+          title={
+            selectedBatchAlreadyLinked
+              ? 'This batch already has an active recruiter link'
+              : 'Generate recruiter link'
           }
         >
           <Plus size={16} />
 
           {generatingBatchId
             ? 'Generating...'
-            : 'Generate Link'}
+            : selectedBatchAlreadyLinked
+              ? 'Link Already Active'
+              : 'Generate Link'}
         </Button>
       }
     >
@@ -233,6 +277,9 @@ export default function RecruiterLinkManager({
             const batchId =
               getBatchId(batch);
 
+            const recruiterUrl =
+              getRecruiterUrl(batch);
+
             const createdAt =
               getCreatedAt(batch);
 
@@ -240,11 +287,16 @@ export default function RecruiterLinkManager({
               getViewCount(batch);
 
             const isGenerating =
-              generatingBatchId ===
-              batchId;
+              String(generatingBatchId) ===
+              String(batchId);
 
             const isRevoking =
-              revokingBatchId === batchId;
+              String(revokingBatchId) ===
+              String(batchId);
+
+            const isCopied =
+              String(copiedBatchId) ===
+              String(batchId);
 
             return (
               <div
@@ -259,15 +311,35 @@ export default function RecruiterLinkManager({
                     '2px solid var(--color-neutral)',
                 }}
               >
-                <Link2
-                  size={18}
+                <button
+                  type="button"
+                  onClick={() =>
+                    openRecruiterPage(batch)
+                  }
+                  aria-label={`Open recruiter page for ${batch.name || 'batch'
+                    }`}
+                  title="Open recruiter page"
                   style={{
+                    border: 'none',
+                    padding: 0,
+                    margin: 0,
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
                     color:
                       'var(--color-accent)',
                   }}
-                />
+                >
+                  <Link2 size={18} />
+                </button>
 
-                <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
                   <div
                     style={{
                       fontWeight:
@@ -299,6 +371,26 @@ export default function RecruiterLinkManager({
 
                     {viewCount} views
                   </div>
+
+                  {recruiterUrl && (
+                    <div
+                      title={recruiterUrl}
+                      style={{
+                        marginTop:
+                          'var(--space-xs)',
+                        fontSize:
+                          'var(--text-xs)',
+                        color:
+                          'var(--color-accent)',
+                        overflow: 'hidden',
+                        textOverflow:
+                          'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {recruiterUrl}
+                    </div>
+                  )}
                 </div>
 
                 <Badge
@@ -313,17 +405,49 @@ export default function RecruiterLinkManager({
                   variant="ghost"
                   size="sm"
                   onClick={() =>
+                    openRecruiterPage(batch)
+                  }
+                  disabled={
+                    isGenerating ||
+                    isRevoking ||
+                    !recruiterUrl
+                  }
+                  title="Open recruiter page"
+                  aria-label={`Open recruiter page for ${batch.name || 'batch'
+                    }`}
+                >
+                  <ExternalLink size={14} />
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
                     copyLink(batch)
                   }
                   disabled={
                     isGenerating ||
-                    isRevoking
+                    isRevoking ||
+                    !recruiterUrl
                   }
-                  aria-label={`Copy recruiter link for ${batch.name ||
-                    'batch'
+                  title={
+                    isCopied
+                      ? 'Copied'
+                      : 'Copy recruiter link'
+                  }
+                  aria-label={`Copy recruiter link for ${batch.name || 'batch'
                     }`}
                 >
-                  <Copy size={14} />
+                  {isCopied ? (
+                    <Check size={14} />
+                  ) : (
+                    <Copy size={14} />
+                  )}
+
+                  {isCopied
+                    ? 'Copied'
+                    : 'Copy'}
                 </Button>
 
                 <Button
@@ -337,8 +461,8 @@ export default function RecruiterLinkManager({
                     isGenerating ||
                     isRevoking
                   }
-                  aria-label={`Revoke recruiter link for ${batch.name ||
-                    'batch'
+                  title="Revoke recruiter link"
+                  aria-label={`Revoke recruiter link for ${batch.name || 'batch'
                     }`}
                 >
                   <Trash2 size={14} />

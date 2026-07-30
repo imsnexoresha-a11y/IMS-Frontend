@@ -13,12 +13,12 @@ export default function AdminTopicDetails({
         return null;
     }
 
-    const handleFileSelect = (file) => {
-        if (!file) {
+    const handleFileSelect = (files) => {
+        if (!files || files.length === 0) {
             return;
         }
 
-        onUploadNote?.(file);
+        onUploadNote?.(files);
     };
 
     return (
@@ -243,8 +243,9 @@ export default function AdminTopicDetails({
                     </div>
 
                     <FileUpload
-                        label="Choose learning material"
+                        label="Choose learning materials"
                         accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
+                        multiple
                         onFileSelect={handleFileSelect}
                     />
                 </div>

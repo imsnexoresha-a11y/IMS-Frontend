@@ -1,106 +1,114 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
     ClipboardList,
     Code2,
     ExternalLink,
-    Pencil,
     Plus,
-    Trash2,
 } from 'lucide-react';
 
 import DataTable from '../../common/DataTable';
 import Badge from '../../common/Badge';
 import Button from '../../common/Button';
 import Modal from '../../common/Modal';
-import ConfirmDialog from '../../common/ConfirmDialog';
 import EmptyState from '../../common/EmptyState';
 import Input from '../../common/Input';
 import Textarea from '../../common/Textarea';
 import Select from '../../common/Select';
 
-import { mockAssignments } from '../../../api/mockData';
+import { createSessionAssignment } from '../../../api/teacherApi';
 import { formatDateTime } from '../../../utils/formatters';
 import { GITHUB_URL_PATTERN } from '../../../utils/constants';
 
-const STATUS_VARIANTS = {
-    draft: 'neutral',
-    published: 'info',
-    pending: 'warning',
-    submitted: 'info',
-    reviewed: 'success',
-    late: 'error',
-};
+function getId(item) {
+    return item?._id || item?.id || '';
+}
 
-function toDateTimeLocal(dateValue) {
-    if (!dateValue) {
-        return '';
+function getLectureAssignment(lecture) {
+    if (!lecture?.assignmentTitle) {
+        return null;
     }
 
-    const date = new Date(dateValue);
+    const lectureId = getId(lecture);
 
-    if (Number.isNaN(date.getTime())) {
-        return '';
-    }
-
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(
-        date.getTime() - offset * 60 * 1000
-    );
-
-    return localDate.toISOString().slice(0, 16);
+    return {
+        id: lecture.assignmentId || `lecture-assignment-${lectureId}`,
+        lectureId,
+        topicId:
+            lecture.topicId ||
+            lecture.topicIds?.[0] ||
+            '',
+        title: lecture.assignmentTitle,
+        instructions:
+            lecture.assignmentDescription ||
+            'Complete the assignment as instructed.',
+        dueDate:
+            lecture.assignmentDeadline ||
+            lecture.submissionDeadline ||
+            null,
+        starterRepoUrl:
+            lecture.githubRepoSeed ||
+            lecture.starterRepoUrl ||
+            '',
+        status: 'published',
+    };
 }
 
 function AdminAssignmentForm({
     topics,
     lectures,
-    defaultValues,
     onSubmit,
     onCancel,
 }) {
-    const topicOptions = topics.map((topic) => ({
-        value: topic.id,
-        label: topic.title,
-    }));
+    const availableLectures = lectures.filter(
+        (lecture) => !lecture.assignmentTitle
+    );
 
-    const lectureOptions = lectures.map((lecture) => ({
-        value: lecture.id,
-        label: lecture.title,
-    }));
+    const lectureOptions = availableLectures.map((lecture) => {
+        const lectureId = getId(lecture);
+        const topicId =
+            lecture.topicId ||
+            lecture.topicIds?.[0] ||
+            '';
+
+        const topic = topics.find(
+            (item) => getId(item) === topicId
+        );
+
+        return {
+            value: lectureId,
+            label: topic?.title
+                ? `${lecture.title} — ${topic.title}`
+                : lecture.title,
+        };
+    });
 
     const {
         register,
         handleSubmit,
+        reset,
         formState: { errors, isSubmitting },
     } = useForm({
-        defaultValues:
-            defaultValues || {
-                title: '',
-                topicId: '',
-                lectureId: '',
-                instructions: '',
-                starterRepoUrl: '',
-                dueDate: '',
-                maxScore: 100,
-                codeReviewEnabled: 'true',
-                status: 'published',
-            },
+        defaultValues: {
+            lectureId: '',
+            title: '',
+            instructions: '',
+            starterRepoUrl: '',
+            dueDate: '',
+        },
     });
 
     const submitForm = async (formData) => {
-        await onSubmit?.({
+        await onSubmit({
+            lectureId: formData.lectureId,
             title: formData.title.trim(),
-            topicId: formData.topicId,
-            lectureId: formData.lectureId || null,
             instructions: formData.instructions.trim(),
             starterRepoUrl:
                 formData.starterRepoUrl?.trim() || '',
             dueDate: formData.dueDate,
-            maxScore: Number(formData.maxScore),
-            codeReviewEnabled:
-                formData.codeReviewEnabled === 'true',
-            status: formData.status,
         });
+
+        reset();
     };
 
     return (
@@ -112,6 +120,40 @@ function AdminAssignmentForm({
                 gap: 'var(--space-md)',
             }}
         >
+            <Select
+                label="Related Lecture"
+                name="lectureId"
+                options={[
+                    {
+                        value: '',
+                        label: 'Select a lecture',
+                    },
+                    ...lectureOptions,
+                ]}
+                required
+                error={errors.lectureId?.message}
+                {...register('lectureId', {
+                    required: 'Please select a lecture',
+                })}
+            />
+
+            {availableLectures.length === 0 && (
+                <div
+                    style={{
+                        padding: 'var(--space-md)',
+                        borderRadius: 'var(--radius-md)',
+                        background:
+                            'var(--color-surface-secondary)',
+                        color: 'var(--color-text-secondary)',
+                        fontSize: 'var(--text-sm)',
+                    }}
+                >
+                    Every lecture in this batch already has an
+                    assignment. Create another lecture before adding
+                    a new assignment.
+                </div>
+            )}
+
             <Input
                 label="Assignment Title"
                 name="title"
@@ -133,40 +175,10 @@ function AdminAssignmentForm({
                 })}
             />
 
-            <Select
-                label="Topic"
-                name="topicId"
-                options={[
-                    {
-                        value: '',
-                        label: 'Select a topic',
-                    },
-                    ...topicOptions,
-                ]}
-                required
-                error={errors.topicId?.message}
-                {...register('topicId', {
-                    required: 'Please select a topic',
-                })}
-            />
-
-            <Select
-                label="Related Lecture"
-                name="lectureId"
-                options={[
-                    {
-                        value: '',
-                        label: 'No lecture selected',
-                    },
-                    ...lectureOptions,
-                ]}
-                {...register('lectureId')}
-            />
-
             <Textarea
                 label="Task Instructions"
                 name="instructions"
-                placeholder="Describe the GitHub-based task, requirements, and expected output"
+                placeholder="Describe the task, requirements, and expected output"
                 rows={6}
                 required
                 error={errors.instructions?.message}
@@ -207,60 +219,24 @@ function AdminAssignmentForm({
                 error={errors.dueDate?.message}
                 {...register('dueDate', {
                     required: 'Due date is required',
-                })}
-            />
+                    validate: (value) => {
+                        if (!value) {
+                            return 'Due date is required';
+                        }
 
-            <Input
-                label="Maximum Score"
-                name="maxScore"
-                type="number"
-                min="1"
-                max="1000"
-                required
-                error={errors.maxScore?.message}
-                {...register('maxScore', {
-                    required: 'Maximum score is required',
-                    min: {
-                        value: 1,
-                        message: 'Maximum score must be at least 1',
-                    },
-                    max: {
-                        value: 1000,
-                        message: 'Maximum score cannot exceed 1000',
+                        const dueDate = new Date(value);
+
+                        if (Number.isNaN(dueDate.getTime())) {
+                            return 'Enter a valid due date';
+                        }
+
+                        if (dueDate <= new Date()) {
+                            return 'Due date must be in the future';
+                        }
+
+                        return true;
                     },
                 })}
-            />
-
-            <Select
-                label="Automated Code Review"
-                name="codeReviewEnabled"
-                options={[
-                    {
-                        value: 'true',
-                        label: 'Enabled',
-                    },
-                    {
-                        value: 'false',
-                        label: 'Disabled',
-                    },
-                ]}
-                {...register('codeReviewEnabled')}
-            />
-
-            <Select
-                label="Assignment Status"
-                name="status"
-                options={[
-                    {
-                        value: 'draft',
-                        label: 'Draft',
-                    },
-                    {
-                        value: 'published',
-                        label: 'Published',
-                    },
-                ]}
-                {...register('status')}
             />
 
             <div
@@ -282,13 +258,14 @@ function AdminAssignmentForm({
                 <Button
                     type="submit"
                     variant="primary"
-                    disabled={isSubmitting}
+                    disabled={
+                        isSubmitting ||
+                        availableLectures.length === 0
+                    }
                 >
                     {isSubmitting
-                        ? 'Saving...'
-                        : defaultValues
-                            ? 'Update Assignment'
-                            : 'Create Assignment'}
+                        ? 'Creating...'
+                        : 'Create Assignment'}
                 </Button>
             </div>
         </form>
@@ -300,138 +277,188 @@ export default function AdminAssignmentsPanel({
     topics = [],
     lectures = [],
 }) {
-    const [assignments, setAssignments] = useState(
-        mockAssignments.map((assignment) => ({
-            ...assignment,
-            topicId:
-                assignment.topicId ||
-                lectures.find(
-                    (lecture) =>
-                        lecture.id === assignment.lectureId
-                )?.topicId ||
-                topics[0]?.id ||
-                '',
-            instructions:
-                assignment.instructions ||
-                'Complete the assigned development task and submit your GitHub repository URL.',
-            starterRepoUrl:
-                assignment.starterRepoUrl || '',
-            maxScore: assignment.maxScore || 100,
-            codeReviewEnabled:
-                assignment.codeReviewEnabled ?? true,
-            status:
-                assignment.status === 'pending'
-                    ? 'published'
-                    : assignment.status,
-        }))
-    );
+    const [createdAssignments, setCreatedAssignments] =
+        useState([]);
 
     const [assignmentModalOpen, setAssignmentModalOpen] =
         useState(false);
 
-    const [editingAssignment, setEditingAssignment] =
-        useState(null);
+    const [requestError, setRequestError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
-    const [assignmentToDelete, setAssignmentToDelete] =
-        useState(null);
+    useEffect(() => {
+        setCreatedAssignments([]);
+        setRequestError('');
+        setSuccessMessage('');
+        setAssignmentModalOpen(false);
+    }, [batchId]);
 
-    const batchAssignments = useMemo(
+    const lectureAssignments = useMemo(
         () =>
-            assignments
-                .filter(
-                    (assignment) =>
-                        assignment.batchId === batchId
-                )
-                .sort(
-                    (first, second) =>
-                        new Date(first.dueDate) -
-                        new Date(second.dueDate)
-                ),
-        [assignments, batchId]
+            lectures
+                .map(getLectureAssignment)
+                .filter(Boolean),
+        [lectures]
     );
 
-    const topicMap = Object.fromEntries(
-        topics.map((topic) => [
-            topic.id,
-            topic.title,
-        ])
+    const assignments = useMemo(() => {
+        const assignmentsByLecture = new Map();
+
+        lectureAssignments.forEach((assignment) => {
+            assignmentsByLecture.set(
+                assignment.lectureId,
+                assignment
+            );
+        });
+
+        createdAssignments.forEach((assignment) => {
+            assignmentsByLecture.set(
+                assignment.lectureId,
+                assignment
+            );
+        });
+
+        return Array.from(assignmentsByLecture.values()).sort(
+            (first, second) => {
+                if (!first.dueDate) {
+                    return 1;
+                }
+
+                if (!second.dueDate) {
+                    return -1;
+                }
+
+                return (
+                    new Date(first.dueDate) -
+                    new Date(second.dueDate)
+                );
+            }
+        );
+    }, [lectureAssignments, createdAssignments]);
+
+    const topicMap = useMemo(
+        () =>
+            Object.fromEntries(
+                topics.map((topic) => [
+                    getId(topic),
+                    topic.title,
+                ])
+            ),
+        [topics]
     );
 
-    const lectureMap = Object.fromEntries(
-        lectures.map((lecture) => [
-            lecture.id,
-            lecture.title,
-        ])
+    const lectureMap = useMemo(
+        () =>
+            Object.fromEntries(
+                lectures.map((lecture) => [
+                    getId(lecture),
+                    lecture.title,
+                ])
+            ),
+        [lectures]
     );
+
+    const lecturesWithCurrentAssignments = useMemo(() => {
+        const assignedLectureIds = new Set(
+            assignments.map(
+                (assignment) => assignment.lectureId
+            )
+        );
+
+        return lectures.map((lecture) => ({
+            ...lecture,
+            assignmentTitle: assignedLectureIds.has(
+                getId(lecture)
+            )
+                ? lecture.assignmentTitle ||
+                'Assignment already created'
+                : '',
+        }));
+    }, [lectures, assignments]);
 
     const openCreateModal = () => {
-        setEditingAssignment(null);
-        setAssignmentModalOpen(true);
-    };
-
-    const openEditModal = (assignment) => {
-        setEditingAssignment(assignment);
+        setRequestError('');
+        setSuccessMessage('');
         setAssignmentModalOpen(true);
     };
 
     const closeAssignmentModal = () => {
-        setEditingAssignment(null);
+        setRequestError('');
         setAssignmentModalOpen(false);
     };
 
-    const handleSaveAssignment = async (formData) => {
-        const normalizedDueDate = new Date(
-            formData.dueDate
-        ).toISOString();
+    const handleCreateAssignment = async (formData) => {
+        setRequestError('');
+        setSuccessMessage('');
 
-        if (editingAssignment) {
-            setAssignments((currentAssignments) =>
-                currentAssignments.map((assignment) =>
-                    assignment.id === editingAssignment.id
-                        ? {
-                            ...assignment,
-                            ...formData,
-                            dueDate: normalizedDueDate,
-                        }
-                        : assignment
-                )
+        try {
+            const assignmentDeadline = new Date(
+                formData.dueDate
+            ).toISOString();
+
+            const response = await createSessionAssignment(
+                formData.lectureId,
+                {
+                    assignmentTitle: formData.title,
+                    assignmentDescription:
+                        formData.instructions,
+                    assignmentDeadline,
+                    githubRepoSeed:
+                        formData.starterRepoUrl ||
+                        undefined,
+                }
             );
-        } else {
+
+            const lecture = lectures.find(
+                (item) =>
+                    getId(item) === formData.lectureId
+            );
+
             const newAssignment = {
-                id: `assignment-${Date.now()}`,
-                batchId,
-                ...formData,
-                dueDate: normalizedDueDate,
-                submittedAt: null,
-                githubUrl: null,
-                score: null,
-                feedback: null,
-                isLate: false,
-                submissionCount: 0,
+                id:
+                    response?._id ||
+                    `assignment-${Date.now()}`,
+                lectureId: formData.lectureId,
+                topicId:
+                    lecture?.topicId ||
+                    lecture?.topicIds?.[0] ||
+                    '',
+                title:
+                    response?.title ||
+                    formData.title,
+                instructions:
+                    response?.prompt ||
+                    formData.instructions,
+                dueDate:
+                    response?.submissionDeadline ||
+                    assignmentDeadline,
+                starterRepoUrl:
+                    formData.starterRepoUrl ||
+                    '',
+                status: 'published',
             };
 
-            setAssignments((currentAssignments) => [
-                ...currentAssignments,
+            setCreatedAssignments((current) => [
+                ...current.filter(
+                    (assignment) =>
+                        assignment.lectureId !==
+                        formData.lectureId
+                ),
                 newAssignment,
             ]);
+
+            setAssignmentModalOpen(false);
+            setSuccessMessage(
+                'Assignment created successfully. Students have been notified.'
+            );
+        } catch (error) {
+            setRequestError(
+                error.message ||
+                'Failed to create assignment'
+            );
+
+            throw error;
         }
-
-        closeAssignmentModal();
-    };
-
-    const handleDeleteAssignment = () => {
-        if (!assignmentToDelete) {
-            return;
-        }
-
-        setAssignments((currentAssignments) =>
-            currentAssignments.filter(
-                (assignment) =>
-                    assignment.id !== assignmentToDelete.id
-            )
-        );
-
-        setAssignmentToDelete(null);
     };
 
     const columns = [
@@ -442,7 +469,8 @@ export default function AdminAssignmentsPanel({
                 <div>
                     <div
                         style={{
-                            fontWeight: 'var(--font-bold)',
+                            fontWeight:
+                                'var(--font-bold)',
                         }}
                     >
                         {value}
@@ -451,8 +479,10 @@ export default function AdminAssignmentsPanel({
                     <div
                         style={{
                             marginTop: '2px',
-                            fontSize: 'var(--text-xs)',
-                            color: 'var(--color-text-secondary)',
+                            fontSize:
+                                'var(--text-xs)',
+                            color:
+                                'var(--color-text-secondary)',
                         }}
                     >
                         {topicMap[row.topicId] ||
@@ -471,25 +501,9 @@ export default function AdminAssignmentsPanel({
             key: 'dueDate',
             label: 'Due Date',
             render: (value) =>
-                value ? formatDateTime(value) : '—',
-        },
-        {
-            key: 'maxScore',
-            label: 'Max Score',
-            render: (value) => (
-                <strong>{value}</strong>
-            ),
-        },
-        {
-            key: 'codeReviewEnabled',
-            label: 'Code Review',
-            render: (value) => (
-                <Badge
-                    variant={value ? 'success' : 'neutral'}
-                >
-                    {value ? 'Enabled' : 'Disabled'}
-                </Badge>
-            ),
+                value
+                    ? formatDateTime(value)
+                    : '—',
         },
         {
             key: 'starterRepoUrl',
@@ -507,8 +521,10 @@ export default function AdminAssignmentsPanel({
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '4px',
-                            color: 'var(--color-accent)',
-                            fontWeight: 'var(--font-bold)',
+                            color:
+                                'var(--color-accent)',
+                            fontWeight:
+                                'var(--font-bold)',
                         }}
                     >
                         <Code2 size={14} />
@@ -522,52 +538,10 @@ export default function AdminAssignmentsPanel({
         {
             key: 'status',
             label: 'Status',
-            render: (value) => (
-                <Badge
-                    variant={
-                        STATUS_VARIANTS[value] || 'neutral'
-                    }
-                    dot
-                >
-                    {value?.replace('_', ' ')}
+            render: () => (
+                <Badge variant="success" dot>
+                    Published
                 </Badge>
-            ),
-        },
-        {
-            key: 'actions',
-            label: 'Actions',
-            render: (_, row) => (
-                <div
-                    style={{
-                        display: 'flex',
-                        gap: 'var(--space-xs)',
-                    }}
-                    onClick={(event) =>
-                        event.stopPropagation()
-                    }
-                >
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => openEditModal(row)}
-                        aria-label={`Edit ${row.title}`}
-                    >
-                        <Pencil size={14} />
-                    </Button>
-
-                    <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        onClick={() =>
-                            setAssignmentToDelete(row)
-                        }
-                        aria-label={`Delete ${row.title}`}
-                    >
-                        <Trash2 size={14} />
-                    </Button>
-                </div>
             ),
         },
     ];
@@ -578,9 +552,11 @@ export default function AdminAssignmentsPanel({
                 <div
                     style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
+                        justifyContent:
+                            'space-between',
                         alignItems: 'center',
-                        marginBottom: 'var(--space-md)',
+                        marginBottom:
+                            'var(--space-md)',
                     }}
                 >
                     <div>
@@ -589,8 +565,10 @@ export default function AdminAssignmentsPanel({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 'var(--space-xs)',
-                                fontSize: 'var(--text-lg)',
-                                fontWeight: 'var(--font-bold)',
+                                fontSize:
+                                    'var(--text-lg)',
+                                fontWeight:
+                                    'var(--font-bold)',
                             }}
                         >
                             <ClipboardList size={20} />
@@ -602,34 +580,68 @@ export default function AdminAssignmentsPanel({
                                 marginTop: '2px',
                                 color:
                                     'var(--color-text-secondary)',
-                                fontSize: 'var(--text-sm)',
+                                fontSize:
+                                    'var(--text-sm)',
                             }}
                         >
-                            Create GitHub-based tasks and enable
-                            automated code reviews.
+                            Manually create assignments for
+                            lectures in this batch.
                         </p>
                     </div>
 
                     <Button
+                        type="button"
                         variant="primary"
                         size="sm"
                         onClick={openCreateModal}
-                        disabled={topics.length === 0}
+                        disabled={
+                            lectures.length === 0 ||
+                            assignments.length >=
+                            lectures.length
+                        }
                     >
                         <Plus size={16} />
                         Create Assignment
                     </Button>
                 </div>
 
-                {batchAssignments.length === 0 ? (
+                {successMessage && (
+                    <div
+                        style={{
+                            marginBottom:
+                                'var(--space-md)',
+                            padding:
+                                'var(--space-sm) var(--space-md)',
+                            borderRadius:
+                                'var(--radius-md)',
+                            background:
+                                'var(--color-success-light)',
+                            color:
+                                'var(--color-success)',
+                            fontSize:
+                                'var(--text-sm)',
+                            fontWeight:
+                                'var(--font-semibold)',
+                        }}
+                    >
+                        {successMessage}
+                    </div>
+                )}
+
+                {lectures.length === 0 ? (
+                    <EmptyState
+                        title="No lectures available"
+                        description="Create a lecture before creating an assignment."
+                    />
+                ) : assignments.length === 0 ? (
                     <EmptyState
                         title="No assignments created"
-                        description="Create a GitHub-based assignment for this batch."
+                        description="Create a manual assignment for one of this batch's lectures."
                     />
                 ) : (
                     <DataTable
                         columns={columns}
-                        data={batchAssignments}
+                        data={assignments}
                         searchPlaceholder="Search assignments..."
                     />
                 )}
@@ -638,64 +650,41 @@ export default function AdminAssignmentsPanel({
             <Modal
                 isOpen={assignmentModalOpen}
                 onClose={closeAssignmentModal}
-                title={
-                    editingAssignment
-                        ? 'Edit Assignment'
-                        : 'Create Assignment'
-                }
+                title="Create Assignment"
                 size="lg"
             >
+                {requestError && (
+                    <div
+                        style={{
+                            marginBottom:
+                                'var(--space-md)',
+                            padding:
+                                'var(--space-sm) var(--space-md)',
+                            borderRadius:
+                                'var(--radius-md)',
+                            background:
+                                'var(--color-error-light)',
+                            color:
+                                'var(--color-error)',
+                            fontSize:
+                                'var(--text-sm)',
+                            fontWeight:
+                                'var(--font-semibold)',
+                        }}
+                    >
+                        {requestError}
+                    </div>
+                )}
+
                 <AdminAssignmentForm
                     topics={topics}
-                    lectures={lectures}
-                    defaultValues={
-                        editingAssignment
-                            ? {
-                                title: editingAssignment.title,
-                                topicId:
-                                    editingAssignment.topicId || '',
-                                lectureId:
-                                    editingAssignment.lectureId || '',
-                                instructions:
-                                    editingAssignment.instructions ||
-                                    '',
-                                starterRepoUrl:
-                                    editingAssignment.starterRepoUrl ||
-                                    '',
-                                dueDate: toDateTimeLocal(
-                                    editingAssignment.dueDate
-                                ),
-                                maxScore:
-                                    editingAssignment.maxScore || 100,
-                                codeReviewEnabled: String(
-                                    editingAssignment
-                                        .codeReviewEnabled ?? true
-                                ),
-                                status:
-                                    editingAssignment.status || 'draft',
-                            }
-                            : null
+                    lectures={
+                        lecturesWithCurrentAssignments
                     }
-                    onSubmit={handleSaveAssignment}
+                    onSubmit={handleCreateAssignment}
                     onCancel={closeAssignmentModal}
                 />
             </Modal>
-
-            <ConfirmDialog
-                isOpen={Boolean(assignmentToDelete)}
-                title="Delete Assignment"
-                message={
-                    assignmentToDelete
-                        ? `Delete "${assignmentToDelete.title}"? This action cannot be undone.`
-                        : ''
-                }
-                confirmLabel="Delete"
-                variant="danger"
-                onConfirm={handleDeleteAssignment}
-                onCancel={() =>
-                    setAssignmentToDelete(null)
-                }
-            />
         </>
     );
 }

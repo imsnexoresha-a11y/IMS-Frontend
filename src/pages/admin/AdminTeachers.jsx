@@ -188,20 +188,20 @@ export default function AdminTeachers() {
 
   const getTeacherDetails = () => {
     if (!detailsTeacher) return null;
-    
+
     // Safely get assigned batches array
-    const teacherBatchIds = Array.isArray(detailsTeacher.assignedBatches) 
-      ? detailsTeacher.assignedBatches.map(id => String(id?.id || id?._id || id)) 
+    const teacherBatchIds = Array.isArray(detailsTeacher.assignedBatches)
+      ? detailsTeacher.assignedBatches.map(id => String(id?.id || id?._id || id))
       : [];
-    
+
     const safeBatches = Array.isArray(batches) ? batches : [];
-    
+
     const assignedBatchesList = safeBatches.filter(b => {
       if (!b) return false;
       const batchIdStr = String(b.id || b._id);
-      
+
       const inTeacherBatches = teacherBatchIds.includes(batchIdStr);
-      
+
       let inBatchTeachers = false;
       if (Array.isArray(b.teacherIds)) {
         inBatchTeachers = b.teacherIds.some(tid => String(tid?.id || tid?._id || tid) === String(detailsTeacher.id || detailsTeacher._id));
@@ -210,12 +210,12 @@ export default function AdminTeachers() {
       }
       // fallback for mock mockBatches which use teacherId
       const inBatchTeacherId = String(b.teacherId) === String(detailsTeacher.id || detailsTeacher._id);
-      
+
       return inTeacherBatches || inBatchTeachers || inBatchTeacherId;
     });
 
     const assignedBatchIds = assignedBatchesList.map(b => String(b.id || b._id));
-    
+
     const safeStudents = Array.isArray(students) ? students : [];
     const studentsInBatches = safeStudents.filter(s => {
       if (!s || !s.batchId) return false;
@@ -288,9 +288,9 @@ export default function AdminTeachers() {
             <Card className="student-block-hover">
               <div style={{ padding: 'var(--space-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
-                  <img 
-                    src={detailsTeacher?.userId?.profilePic || detailsTeacher?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${detailsTeacher?.id || detailsTeacher?._id || 'default'}`} 
-                    alt="Avatar" 
+                  <img
+                    src={detailsTeacher?.userId?.profilePic || detailsTeacher?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${detailsTeacher?.id || detailsTeacher?._id || 'default'}`}
+                    alt="Avatar"
                     style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-primary)' }}
                   />
                   <div>
@@ -298,7 +298,7 @@ export default function AdminTeachers() {
                     <p style={{ color: 'var(--color-text-secondary)' }}>{detailsTeacher?.userId?.email || detailsTeacher?.email || 'No email'} | {detailsTeacher?.userId?.phone || detailsTeacher?.phone || 'No phone'}</p>
                   </div>
                 </div>
-                
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)' }}>
                   <div>
                     <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>Assigned Batches ({details?.batchCount || 0})</p>
@@ -315,7 +315,7 @@ export default function AdminTeachers() {
                     {details?.students && details.students.length > 0 ? (
                       <div style={{ maxHeight: '150px', overflowY: 'auto', marginTop: 'var(--space-xs)', padding: 'var(--space-xs)', background: 'var(--color-surface-raised)', borderRadius: 'var(--radius-sm)' }}>
                         <ul style={{ paddingLeft: 'var(--space-md)', margin: 0, fontSize: 'var(--text-sm)' }}>
-                          {details.students.map((s, i) => <li key={s?.id || s?._id || i}>{s?.userId?.name || s?.name || 'Unknown Student'} <span style={{color: 'var(--color-text-secondary)', fontSize: '0.8em'}}>({s?.batchName || 'Unknown Batch'})</span></li>)}
+                          {details.students.map((s, i) => <li key={s?.id || s?._id || i}>{s?.userId?.name || s?.name || 'Unknown Student'} <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.8em' }}>({s?.batchName || 'Unknown Batch'})</span></li>)}
                         </ul>
                       </div>
                     ) : (
@@ -333,6 +333,7 @@ export default function AdminTeachers() {
         isOpen={modalOpen}
         onClose={handleCloseModal}
         teacher={selectedTeacher}
+        batches={Array.isArray(batches) ? batches : []}
         onSave={handleSave}
       />
 

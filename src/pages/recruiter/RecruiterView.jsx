@@ -1,34 +1,128 @@
 import { useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
+
 import RecruiterStudentList from '../../components/recruiter/RecruiterStudentList';
 import RecruiterStudentDetailModal from '../../components/recruiter/RecruiterStudentDetailModal';
 
+import {
+  useRecruiterStudents,
+  useRecruiterStudent,
+} from '../../hooks/useRecruiter';
+
 export default function RecruiterView() {
   const { uuid } = useParams();
-  const [selectedStudent, setSelectedStudent] = useState(null);
 
-  // In a real app, we'd validate the UUID with the backend.
-  // For mock purposes, just assume it's valid if it exists.
-  if (!uuid) return <Navigate to="/login" replace />;
+  const [selectedStudentId, setSelectedStudentId] =
+    useState(null);
+
+  const { data, isLoading, error } =
+    useRecruiterStudents(uuid);
+
+  const {
+    data: studentDetail,
+  } = useRecruiterStudent(
+    uuid,
+    selectedStudentId
+  );
+
+  if (!uuid) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          padding: '40px',
+          textAlign: 'center',
+        }}
+      >
+        Loading...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          padding: '40px',
+          textAlign: 'center',
+        }}
+      >
+        {error.message}
+      </div>
+    );
+  }
+
+  const students =
+    data?.students || [];
+
+  const batchName =
+    data?.batchName ||
+    'Portfolio';
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', padding: 'var(--space-2xl)' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ marginBottom: 'var(--space-2xl)', textAlign: 'center' }}>
-          <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-black)', color: 'var(--color-ink)', marginBottom: 'var(--space-sm)' }}>
-            IMS Cohort Portfolio
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor:
+          'var(--color-bg)',
+        padding:
+          'var(--space-2xl)',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+        }}
+      >
+        <div
+          style={{
+            marginBottom:
+              'var(--space-2xl)',
+            textAlign: 'center',
+          }}
+        >
+          <h1>
+            {batchName}
           </h1>
-          <p style={{ fontSize: 'var(--text-lg)', color: 'var(--color-text-secondary)' }}>
-            Meet our latest full-stack graduates. Click any profile to view detailed performance and skills.
+
+          <p>
+            Meet our latest
+            graduates.
           </p>
         </div>
 
-        <RecruiterStudentList onStudentClick={setSelectedStudent} />
+        <RecruiterStudentList
+          students={students}
+          onStudentClick={(
+            student
+          ) =>
+            setSelectedStudentId(
+              student.id
+            )
+          }
+        />
 
         <RecruiterStudentDetailModal
-          isOpen={!!selectedStudent}
-          onClose={() => setSelectedStudent(null)}
-          student={selectedStudent}
+          isOpen={
+            !!selectedStudentId
+          }
+          onClose={() =>
+            setSelectedStudentId(
+              null
+            )
+          }
+          student={
+            studentDetail?.student
+          }
         />
       </div>
     </div>
