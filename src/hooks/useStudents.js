@@ -77,10 +77,10 @@ export function useUpdateStudentProfile() {
   const { updateUser } = useAuth();
   return useMutation({
     mutationFn: studentApi.updateStudentProfile,
-    onSuccess: (updatedData) => {
+    onSuccess: (_res, variables) => {
       queryClient.invalidateQueries({ queryKey: ['studentProfile'] });
-      if (updatedData) {
-        updateUser(updatedData);
+      if (variables && updateUser) {
+        updateUser(variables);
       }
     },
   });

@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import Avatar from '../common/Avatar';
 import RoleBadge from './RoleBadge';
 import NotificationDropdown from './NotificationDropdown';
-import RoleSwitcher from './RoleSwitcher';
 import styles from './Layout.module.css';
 
 import { useNotifications } from '../../hooks/useNotifications';
@@ -30,7 +29,6 @@ export default function Topbar({ title }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-        <RoleSwitcher />
 
         <div style={{ position: 'relative' }}>
           <button
@@ -78,33 +76,36 @@ export default function Topbar({ title }) {
               flexDirection: 'column',
               padding: 'var(--space-xxs)'
             }}>
-              {role !== 'admin' && (
-                <button
-                  onClick={() => {
-                    setShowLogout(false);
-                    if (role === 'student') {
-                      navigate('/student/profile');
-                    } else if (role === 'teacher') {
-                      navigate('/teacher/profile');
-                    }
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: 'var(--space-xs) var(--space-sm)',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontWeight: 'var(--font-bold)',
-                    fontSize: 'var(--text-xs)',
-                    width: '100%'
-                  }}
-                >
-                  👤 View Profile
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setShowLogout(false);
+                  const normalizedRole = role ? role.toLowerCase() : '';
+                  if (normalizedRole === 'student') {
+                    navigate('/student/profile');
+                  } else if (normalizedRole === 'teacher' || normalizedRole === 'instructor') {
+                    navigate('/teacher/profile');
+                  } else if (normalizedRole === 'admin') {
+                    navigate('/admin');
+                  } else {
+                    navigate('/');
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: 'var(--space-xs) var(--space-sm)',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontWeight: 'var(--font-bold)',
+                  fontSize: 'var(--text-xs)',
+                  width: '100%'
+                }}
+              >
+                👤 View Profile
+              </button>
               <button
                 onClick={() => {
                   setShowLogout(false);

@@ -6,6 +6,8 @@ export default function RoleRoute({ allowedRoles = [] }) {
   const { isAuthenticated, role } = useAuth();
   const location = useLocation();
 
+  const normalizedUserRole = role ? (role.toLowerCase() === 'instructor' ? 'teacher' : role.toLowerCase()) : null;
+
   if (!isAuthenticated) {
     return (
       <Navigate
@@ -18,7 +20,8 @@ export default function RoleRoute({ allowedRoles = [] }) {
 
   if (
     allowedRoles.length > 0 &&
-    !allowedRoles.includes(role)
+    normalizedUserRole &&
+    !allowedRoles.map(r => r.toLowerCase()).includes(normalizedUserRole)
   ) {
     return <Navigate to="/unauthorized" replace />;
   }
