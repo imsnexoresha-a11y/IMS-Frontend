@@ -107,15 +107,30 @@ export default function CreateTeacherForm({
         name="mobileNo"
         type="tel"
         required
+        maxLength={10}
         placeholder="9876543210"
         error={errors.mobileNo?.message}
+        onInput={(e) => {
+          e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+        }}
+        onPaste={(e) => {
+          e.preventDefault();
+          const pasted = (e.clipboardData || window.clipboardData).getData('text');
+          const sanitized = pasted.replace(/\D/g, '').slice(0, 10);
+          e.target.value = sanitized;
+          e.target.dispatchEvent(new Event('input', { bubbles: true }));
+        }}
         {...register('mobileNo', {
-          required:
-            'Mobile number is required',
-          minLength: {
-            value: 10,
-            message:
-              'Mobile number must contain at least 10 characters',
+          required: 'Mobile number is required',
+          validate: (value) => {
+            const trimmed = (value || '').trim();
+            if (!trimmed) return 'Mobile number is required';
+            if (!/^\d+$/.test(trimmed)) return 'Mobile number must contain digits only';
+            if (trimmed.length < 10) return 'Mobile number must be exactly 10 digits';
+            if (trimmed.length > 10) return 'Mobile number must not exceed 10 digits';
+            if (!/^[6-9]/.test(trimmed)) return 'Mobile number must start with 6, 7, 8, or 9';
+            if (!/^[6-9]\d{9}$/.test(trimmed)) return 'Enter a valid 10-digit Indian mobile number';
+            return true;
           },
         })}
       />
