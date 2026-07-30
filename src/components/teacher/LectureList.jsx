@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Calendar, Edit, Trash2, BarChart2, Plus, FilePlus } from 'lucide-react';
 import {
   useLectures,
@@ -31,12 +31,28 @@ export default function LectureList({ batchId }) {
   const deleteLectureMutation = useDeleteLecture();
   const updateStatusMutation = useUpdateLectureStatus();
 
-  // Modals Local State
+  // Filter and Modals Local State
+  const [statusFilter, setStatusFilter] = useState('all');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingLecture, setEditingLecture] = useState(null);
   const [summaryLecture, setSummaryLecture] = useState(null);
   const [statusLecture, setStatusLecture] = useState(null);
   const [assignmentLecture, setAssignmentLecture] = useState(null);
+
+  // Sort lectures chronologically (closest coming at top) and filter by status
+  const sortedAndFilteredLectures = useMemo(() => {
+    let list = [...lectures];
+
+    if (statusFilter !== 'all') {
+      list = list.filter((l) => l.status === statusFilter);
+    }
+
+    return list.sort((a, b) => {
+      const timeA = new Date(a.date || a.sessionDateAndTime || 0).getTime();
+      const timeB = new Date(b.date || b.sessionDateAndTime || 0).getTime();
+      return timeA - timeB;
+    });
+  }, [lectures, statusFilter]);
 
   if (isLoading) {
     return <div style={{ padding: 'var(--space-lg)', textAlign: 'center' }}>Loading lectures...</div>;
@@ -183,12 +199,34 @@ export default function LectureList({ batchId }) {
     <div>
       <DataTable
         columns={columns}
-        data={lectures}
+        data={sortedAndFilteredLectures}
         searchPlaceholder="Search lectures..."
         toolbarActions={
-          <Button variant="primary" size="sm" onClick={() => setIsAddOpen(true)}>
-            <Plus size={16} style={{ marginRight: '4px' }} /> Schedule Lecture
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: 'var(--space-xs) var(--space-sm)',
+                border: '2px solid var(--color-neutral)',
+                fontWeight: 'var(--font-bold)',
+                backgroundColor: 'var(--color-neutral-bg)',
+                cursor: 'pointer',
+                fontSize: 'var(--text-xs)',
+              }}
+            >
+              <option value="all">All Statuses</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="postponed">Postponed</option>
+            </select>
+
+            <Button variant="primary" size="sm" onClick={() => setIsAddOpen(true)}>
+              <Plus size={16} style={{ marginRight: '4px' }} /> Schedule Lecture
+            </Button>
+          </div>
         }
       />
 
