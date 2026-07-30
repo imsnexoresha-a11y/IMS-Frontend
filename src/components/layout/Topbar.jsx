@@ -196,49 +196,36 @@ export default function Topbar({ title }) {
                 top: '100%',
                 right: 0,
                 marginTop: '8px',
-                backgroundColor:
-                  'var(--color-surface)',
-                border:
-                  '2px solid var(--color-neutral)',
-                boxShadow:
-                  'var(--shadow-offset)',
+                backgroundColor: 'var(--color-surface)',
+                border: '2px solid var(--color-neutral)',
+                boxShadow: 'var(--shadow-offset)',
                 zIndex: 100,
                 minWidth: '180px',
                 display: 'flex',
                 flexDirection: 'column',
-                padding:
-                  'var(--space-xxs)',
+                padding: 'var(--space-xxs)',
               }}
             >
               <button
                 type="button"
                 role="menuitem"
-                onClick={
-                  handleProfileNavigation
-                }
+                onClick={handleProfileNavigation}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding:
-                    'var(--space-xs) var(--space-sm)',
-                  backgroundColor:
-                    'transparent',
+                  padding: 'var(--space-xs) var(--space-sm)',
+                  backgroundColor: 'transparent',
                   border: 'none',
                   textAlign: 'left',
                   cursor: 'pointer',
-                  fontWeight:
-                    'var(--font-bold)',
-                  fontSize:
-                    'var(--text-xs)',
+                  fontWeight: 'var(--font-bold)',
+                  fontSize: 'var(--text-xs)',
                   width: '100%',
                 }}
               >
                 <User size={14} />
-
-                {role === 'admin'
-                  ? 'Admin Dashboard'
-                  : 'View Profile'}
+                {role === 'admin' ? 'Admin Dashboard' : 'View Profile'}
               </button>
 
               <button
@@ -249,21 +236,15 @@ export default function Topbar({ title }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding:
-                    'var(--space-xs) var(--space-sm)',
-                  backgroundColor:
-                    'transparent',
+                  padding: 'var(--space-xs) var(--space-sm)',
+                  backgroundColor: 'transparent',
                   border: 'none',
-                  borderTop:
-                    '1px solid var(--border-color)',
+                  borderTop: '1px solid var(--border-color)',
                   textAlign: 'left',
                   cursor: 'pointer',
-                  fontWeight:
-                    'var(--font-bold)',
-                  fontSize:
-                    'var(--text-xs)',
-                  color:
-                    'var(--color-danger)',
+                  fontWeight: 'var(--font-bold)',
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--color-danger)',
                   width: '100%',
                 }}
               >
