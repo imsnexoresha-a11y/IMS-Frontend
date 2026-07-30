@@ -112,18 +112,28 @@ export default function StudentAssignments({ assignments: assignmentsProp }) {
           <div style={{ marginBottom: 'var(--space-md)', padding: 'var(--space-sm) var(--space-md)', backgroundColor: 'var(--color-surface)', border: 'var(--border)', boxShadow: 'var(--shadow-sm)', display: 'inline-block', fontWeight: 'bold' }}>
             Today's Date: <span style={{ color: 'var(--color-primary)' }}>{new Date().toLocaleDateString()}</span>
           </div>
-          {assignments.map((assignment) => (
-          <motion.div 
-            key={assignment.id || assignment._id}
-            whileHover={{ scale: 1.01 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <Card title={assignment.title} className="student-block-hover">
-              <p>{assignment.description || assignment.task}</p>
-              <div style={{ marginTop: 'var(--space-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                  Deadline: {new Date(assignment.submissionDeadline || assignment.deadline || assignment.dueDate).toLocaleDateString()}
-                </div>
+          {assignments.map((assignment) => {
+            const rawDeadline = assignment.submissionDeadline || assignment.deadline || assignment.dueDate;
+            const isSubmitted = assignment.status === 'submitted' || assignment.status === 'reviewed' || assignment.submitted;
+            const isOverdue = rawDeadline && new Date(rawDeadline) < new Date() && !isSubmitted;
+
+            return (
+              <motion.div 
+                key={assignment.id || assignment._id}
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Card title={assignment.title} className="student-block-hover">
+                  <p>{assignment.description || assignment.task}</p>
+                  <div style={{ marginTop: 'var(--space-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 'var(--text-sm)', color: isOverdue ? 'var(--color-danger)' : 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
+                      <span>Deadline: {new Date(rawDeadline).toLocaleDateString()}</span>
+                      {isOverdue && (
+                        <span className="badge-gamified" style={{ backgroundColor: 'var(--color-danger)', color: 'white', padding: '2px 8px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)' }}>
+                          Overdue
+                        </span>
+                      )}
+                    </div>
                 
                 {assignment.status === 'submitted' || assignment.status === 'reviewed' || assignment.submitted ? (
                   <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'center' }}>
@@ -178,7 +188,8 @@ export default function StudentAssignments({ assignments: assignmentsProp }) {
               </AnimatePresence>
             </Card>
           </motion.div>
-        ))}
+        );
+      })}
         </>
       )}
     </div>

@@ -207,6 +207,13 @@ function AdminAssignmentForm({
                 error={errors.dueDate?.message}
                 {...register('dueDate', {
                     required: 'Due date is required',
+                    validate: (value) => {
+                        if (!value) return true;
+                        if (new Date(value) < new Date()) {
+                            return 'Due date must be in the future';
+                        }
+                        return true;
+                    },
                 })}
             />
 
@@ -522,16 +529,20 @@ export default function AdminAssignmentsPanel({
         {
             key: 'status',
             label: 'Status',
-            render: (value) => (
-                <Badge
-                    variant={
-                        STATUS_VARIANTS[value] || 'neutral'
-                    }
-                    dot
-                >
-                    {value?.replace('_', ' ')}
-                </Badge>
-            ),
+            render: (value, row) => {
+                const isPastDue = row.dueDate && new Date(row.dueDate) < new Date();
+                const displayStatus = isPastDue && value === 'published' ? 'overdue' : value;
+                return (
+                    <Badge
+                        variant={
+                            displayStatus === 'overdue' ? 'error' : (STATUS_VARIANTS[value] || 'neutral')
+                        }
+                        dot
+                    >
+                        {displayStatus === 'overdue' ? 'Overdue' : value?.replace('_', ' ')}
+                    </Badge>
+                );
+            },
         },
         {
             key: 'actions',
