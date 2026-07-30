@@ -2,7 +2,7 @@ import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
 import ProgressBar from '../common/ProgressBar';
 import Badge from '../common/Badge';
-import { Mail, Globe, Link2 } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import Button from '../common/Button';
 
 export default function RecruiterStudentDetailModal({ isOpen, onClose, student }) {
@@ -19,19 +19,42 @@ export default function RecruiterStudentDetailModal({ isOpen, onClose, student }
               {student.batchName} Graduate
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-              <Button variant="ghost" size="sm" onClick={() => window.location.href = `mailto:${student.email}`}>
-                <Mail size={16} /> Email
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Globe size={16} /> GitHub
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Link2 size={16} /> LinkedIn
-              </Button>
+              <a
+                href={
+                  student.email
+                    ? `mailto:${encodeURIComponent(
+                      student.email
+                    )}`
+                    : undefined
+                }
+                style={{
+                  textDecoration: 'none',
+                  pointerEvents: student.email
+                    ? 'auto'
+                    : 'none',
+                  opacity: student.email
+                    ? 1
+                    : 0.5,
+                }}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={!student.email}
+                >
+                  <Mail size={16} />
+                  Email
+                </Button>
+              </a>
             </div>
           </div>
           <div style={{ width: '120px' }}>
-            <ProgressBar value={student.totalMarks} min={30} max={100} gauge={true} label="Score" />
+            <ProgressBar
+              value={
+                student.overallScore ??
+                student.totalPoints
+              } min={30} max={100} gauge={true} label="Score" />
           </div>
         </div>
 

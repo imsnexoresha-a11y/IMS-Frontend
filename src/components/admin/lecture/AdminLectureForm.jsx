@@ -9,6 +9,7 @@ export default function AdminLectureForm({
     defaultValues = null,
     onSubmit,
     onCancel,
+    isSaving = false,
 }) {
     const topicOptions = topics.map((topic) => ({
         value: topic.id,
@@ -24,6 +25,9 @@ export default function AdminLectureForm({
             title: '',
             topicId: '',
             date: '',
+            startTime: '',
+            endTime: '',
+            half1EndTime: '',
             meetUrl: '',
             description: '',
         },
@@ -33,11 +37,29 @@ export default function AdminLectureForm({
         await onSubmit?.({
             title: formData.title.trim(),
             topicId: formData.topicId,
-            date: formData.date,
-            meetUrl: formData.meetUrl.trim(),
-            description: formData.description?.trim() || '',
+
+            lectureDate:
+                formData.lectureDate ||
+                formData.date,
+
+            startTime: formData.startTime,
+
+            halfwayTime:
+                formData.halfwayTime ||
+                formData.half1EndTime,
+
+            endTime: formData.endTime,
+
+            meetUrl:
+                formData.meetUrl.trim(),
+
+            description:
+                formData.description?.trim() ||
+                '',
         });
     };
+
+    const disabled = isSubmitting || isSaving;
 
     return (
         <form
@@ -50,79 +72,73 @@ export default function AdminLectureForm({
         >
             <Input
                 label="Lecture Title"
-                name="title"
-                placeholder="Example: Introduction to React Components"
-                required
-                error={errors.title?.message}
                 {...register('title', {
                     required: 'Lecture title is required',
-                    minLength: {
-                        value: 3,
-                        message: 'Lecture title must contain at least 3 characters',
-                    },
-                    maxLength: {
-                        value: 120,
-                        message: 'Lecture title cannot exceed 120 characters',
-                    },
                 })}
+                error={errors.title?.message}
             />
 
             <Select
                 label="Topic"
-                name="topicId"
                 options={[
-                    {
-                        value: '',
-                        label: 'Select a topic',
-                    },
+                    { value: '', label: 'Select a topic' },
                     ...topicOptions,
                 ]}
-                required
-                error={errors.topicId?.message}
                 {...register('topicId', {
                     required: 'Please select a topic',
                 })}
+                error={errors.topicId?.message}
             />
 
             <Input
-                label="Lecture Date and Time"
-                name="date"
-                type="datetime-local"
-                required
-                error={errors.date?.message}
+                label="Lecture Date"
+                type="date"
                 {...register('date', {
-                    required: 'Lecture date and time are required',
+                    required: 'Lecture date is required',
                 })}
+                error={errors.date?.message}
+            />
+
+            <Input
+                label="Start Time"
+                type="time"
+                {...register('startTime', {
+                    required: 'Start time is required',
+                })}
+                error={errors.startTime?.message}
+            />
+
+            <Input
+                label="Halfway Time"
+                type="time"
+                {...register('half1EndTime', {
+                    required: 'Halfway time is required',
+                })}
+                error={errors.half1EndTime?.message}
+            />
+
+            <Input
+                label="End Time"
+                type="time"
+                {...register('endTime', {
+                    required: 'End time is required',
+                })}
+                error={errors.endTime?.message}
             />
 
             <Input
                 label="Google Meet URL"
-                name="meetUrl"
                 type="url"
-                placeholder="https://meet.google.com/abc-defg-hij"
-                required
-                error={errors.meetUrl?.message}
                 {...register('meetUrl', {
                     required: 'Google Meet URL is required',
-                    pattern: {
-                        value: /^https:\/\/meet\.google\.com\/[a-zA-Z0-9-]+\/?$/,
-                        message: 'Enter a valid Google Meet URL',
-                    },
                 })}
+                error={errors.meetUrl?.message}
             />
 
             <Textarea
                 label="Description"
-                name="description"
-                placeholder="Add lecture agenda, learning objectives, or instructions"
                 rows={4}
-                error={errors.description?.message}
-                {...register('description', {
-                    maxLength: {
-                        value: 500,
-                        message: 'Description cannot exceed 500 characters',
-                    },
-                })}
+                {...register('description')}
             />
 
             <div
@@ -136,7 +152,7 @@ export default function AdminLectureForm({
                     type="button"
                     variant="ghost"
                     onClick={onCancel}
-                    disabled={isSubmitting}
+                    disabled={disabled}
                 >
                     Cancel
                 </Button>
@@ -144,9 +160,9 @@ export default function AdminLectureForm({
                 <Button
                     type="submit"
                     variant="primary"
-                    disabled={isSubmitting}
+                    disabled={disabled}
                 >
-                    {isSubmitting
+                    {disabled
                         ? 'Saving...'
                         : defaultValues
                             ? 'Update Lecture'

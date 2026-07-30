@@ -5,6 +5,7 @@ import Input from '../common/Input';
 import Textarea from '../common/Textarea';
 import Button from '../common/Button';
 
+
 const EMPTY_VALUES = {
   name: '',
   email: '',
@@ -13,12 +14,14 @@ const EMPTY_VALUES = {
   designation: '',
   bio: '',
   linkedInUrl: '',
+  assignedBatches: [],
 };
 
 export default function CreateTeacherForm({
   onSubmit,
   onCancel,
   defaultValues = null,
+  batches = [],
 }) {
   const isEditing = Boolean(defaultValues);
 
@@ -41,15 +44,29 @@ export default function CreateTeacherForm({
   const handleFormSubmit = async (formData) => {
     const payload = {
       name: formData.name.trim(),
+
       email: formData.email
         .trim()
         .toLowerCase(),
-      mobileNo: formData.mobileNo.trim(),
+
+      mobileNo:
+        formData.mobileNo.trim(),
+
       designation:
         formData.designation.trim(),
-      bio: formData.bio?.trim() || '',
+
+      bio:
+        formData.bio?.trim() || '',
+
       linkedInUrl:
-        formData.linkedInUrl?.trim() || '',
+        formData.linkedInUrl?.trim() ||
+        '',
+
+      assignedBatches: Array.isArray(
+        formData.assignedBatches
+      )
+        ? formData.assignedBatches
+        : [],
     };
 
     if (!isEditing) {
@@ -151,7 +168,82 @@ export default function CreateTeacherForm({
             'Designation is required',
         })}
       />
+      <div>
+        <p
+          style={{
+            marginBottom:
+              'var(--space-sm)',
+            fontWeight:
+              'var(--font-bold)',
+          }}
+        >
+          Assigned Batches
+        </p>
 
+        {Array.isArray(batches) &&
+          batches.length > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-xs)',
+              maxHeight: '180px',
+              overflowY: 'auto',
+              padding: 'var(--space-sm)',
+              border:
+                '1px solid var(--color-border)',
+              borderRadius:
+                'var(--radius-sm)',
+            }}
+          >
+            {batches.map((batch) => {
+              const batchId =
+                batch?._id ||
+                batch?.id;
+
+              if (!batchId) {
+                return null;
+              }
+
+              return (
+                <label
+                  key={batchId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-sm)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    value={batchId}
+                    {...register(
+                      'assignedBatches'
+                    )}
+                  />
+
+                  <span>
+                    {batch.name ||
+                      batch.batchName ||
+                      batch.title ||
+                      'Unnamed Batch'}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        ) : (
+          <p
+            style={{
+              color:
+                'var(--color-text-secondary)',
+            }}
+          >
+            No batches available.
+          </p>
+        )}
+      </div>
       <Textarea
         label="Bio"
         name="bio"

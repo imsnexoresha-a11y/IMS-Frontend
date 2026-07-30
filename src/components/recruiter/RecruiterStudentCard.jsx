@@ -33,7 +33,8 @@ export default function RecruiterStudentCard({ student, onClick }) {
       </div>
 
       <div>
-        <ProgressBar value={student.totalMarks} min={30} max={100} gauge={true} label="Overall Score" />
+        <ProgressBar
+          value={student.totalPoints} min={30} max={100} gauge={true} label="Overall Score" />
       </div>
 
       <div style={{ display: 'flex', gap: 'var(--space-xs)', flexWrap: 'wrap' }}>

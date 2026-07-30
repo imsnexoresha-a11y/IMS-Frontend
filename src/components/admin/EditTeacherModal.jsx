@@ -5,19 +5,40 @@ export default function EditTeacherModal({
   isOpen,
   onClose,
   teacher,
+  batches = [],
   onSave,
 }) {
   const isEditing = Boolean(teacher);
 
   const handleSubmit = async (data) => {
     await onSave?.({
-      id: teacher?.id || teacher?._id || null,
+      id:
+        teacher?.id ||
+        teacher?._id ||
+        null,
+
       data,
-      mode: isEditing ? 'edit' : 'create',
+      mode:
+        isEditing
+          ? 'edit'
+          : 'create',
     });
 
     onClose?.();
   };
+
+  const assignedBatches = Array.isArray(
+    teacher?.assignedBatches
+  )
+    ? teacher.assignedBatches
+      .map(
+        (batch) =>
+          batch?._id ||
+          batch?.id ||
+          batch
+      )
+      .filter(Boolean)
+    : [];
 
   return (
     <Modal
@@ -31,18 +52,29 @@ export default function EditTeacherModal({
       size="md"
     >
       <CreateTeacherForm
+        batches={batches}
         defaultValues={
           isEditing
             ? {
-              name: teacher.name || '',
-              email: teacher.email || '',
+              name:
+                teacher.name || '',
+
+              email:
+                teacher.email || '',
+
               mobileNo:
                 teacher.mobileNo || '',
+
               designation:
                 teacher.designation || '',
-              bio: teacher.bio || '',
+
+              bio:
+                teacher.bio || '',
+
               linkedInUrl:
                 teacher.linkedInUrl || '',
+
+              assignedBatches,
             }
             : null
         }

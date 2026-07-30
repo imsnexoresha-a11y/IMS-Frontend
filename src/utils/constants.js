@@ -71,4 +71,5 @@ export const ITEMS_PER_PAGE = 10;
 
 export const CSV_ACCEPT = '.csv,text/csv,application/vnd.ms-excel';
 
-export const GITHUB_URL_PATTERN = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+(\/.*)?$/;
+export const GITHUB_URL_PATTERN =
+  /^https?:\/\/(?:www\.)?github\.com\/[A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?\/[A-Za-z0-9._-]+(?:\/(?:tree|blob|pull)\/[^\s?#]+)?\/?$/i;

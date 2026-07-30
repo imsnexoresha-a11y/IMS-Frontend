@@ -1,72 +1,105 @@
 import {
-    BarChart,
     Bar,
+    BarChart,
     CartesianGrid,
-    Legend,
-    Line,
-    LineChart,
     ResponsiveContainer,
     Tooltip,
     XAxis,
     YAxis,
 } from 'recharts';
 
-import Card from '../../common/Card';
-import StatCard from '../../common/StatCard';
 import {
     BarChart3,
     ClipboardCheck,
     GraduationCap,
     Users,
 } from 'lucide-react';
-import { mockStudents } from '../../../api/mockData';
 
-const TREND_DATA = [
+import Card from '../../common/Card';
+import StatCard from '../../common/StatCard';
+import { useBatchMetrics } from '../../../hooks/useMetrics';
+
+const EMPTY_DISTRIBUTION = [
     {
-        week: 'Week 1',
-        attendance: 88,
-        quiz: 72,
-        assignment: 68,
+        range: 'Below 80',
+        students: 0,
     },
     {
-        week: 'Week 2',
-        attendance: 91,
-        quiz: 76,
-        assignment: 74,
+        range: '80–99',
+        students: 0,
     },
     {
-        week: 'Week 3',
-        attendance: 89,
-        quiz: 81,
-        assignment: 79,
+        range: '100–119',
+        students: 0,
     },
     {
-        week: 'Week 4',
-        attendance: 94,
-        quiz: 84,
-        assignment: 83,
+        range: '120–139',
+        students: 0,
+    },
+    {
+        range: '140+',
+        students: 0,
     },
 ];
 
-const SCORE_DISTRIBUTION = [
-    { range: 'Below 80', students: 1 },
-    { range: '80–99', students: 2 },
-    { range: '100–119', students: 2 },
-    { range: '120–139', students: 2 },
-    { range: '140+', students: 1 },
-];
+function formatMetric(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return '0';
+    }
+
+    return number.toFixed(2);
+}
 
 export default function AdminAnalyticsPanel({
+    batchId,
     topics = [],
     lectures = [],
 }) {
-    const totalStudents = mockStudents.length;
+    const {
+        data: metrics,
+        isLoading,
+        isError,
+    } = useBatchMetrics(batchId);
+
     const completedTopics = topics.filter(
-        (topic) => topic.completed
+        (topic) =>
+            topic.completed ||
+            topic.status === 'completed'
     ).length;
+
     const completedLectures = lectures.filter(
-        (lecture) => lecture.status === 'completed'
+        (lecture) =>
+            lecture.status === 'completed'
     ).length;
+
+    const totalStudents =
+        Number(metrics?.studentCount) || 0;
+
+    const averageScore = formatMetric(
+        metrics?.avgOverallScore
+    );
+
+    const scoreDistribution =
+        Array.isArray(metrics?.scoreDistribution) &&
+            metrics.scoreDistribution.length > 0
+            ? metrics.scoreDistribution
+            : EMPTY_DISTRIBUTION;
+
+    if (!batchId) {
+        return (
+            <Card>
+                <p
+                    style={{
+                        color: 'var(--color-text-secondary)',
+                    }}
+                >
+                    Select a batch to view analytics.
+                </p>
+            </Card>
+        );
+    }
 
     return (
         <div
@@ -92,104 +125,183 @@ export default function AdminAnalyticsPanel({
                         color: 'var(--color-text-secondary)',
                     }}
                 >
-                    View learning progress, attendance, quizzes, assignments, and score
-                    distribution.
+                    View real learning progress,
+                    attendance, quizzes, assignments,
+                    and score distribution.
                 </p>
             </div>
 
-            <div
-                style={{
-                    display: 'grid',
-                    gridTemplateColumns:
-                        'repeat(4, minmax(0, 1fr))',
-                    gap: 'var(--space-md)',
-                }}
-            >
-                <StatCard
-                    title="Students"
-                    value={totalStudents}
-                    icon={Users}
-                />
+            {isLoading && (
+                <Card>
+                    <p>Loading batch analytics...</p>
+                </Card>
+            )}
 
-                <StatCard
-                    title="Topics Completed"
-                    value={`${completedTopics}/${topics.length}`}
-                    icon={GraduationCap}
-                />
+            {isError && (
+                <Card>
+                    <p
+                        style={{
+                            color: 'var(--color-danger)',
+                        }}
+                    >
+                        Could not load batch analytics.
+                    </p>
+                </Card>
+            )}
 
-                <StatCard
-                    title="Lectures Completed"
-                    value={`${completedLectures}/${lectures.length}`}
-                    icon={ClipboardCheck}
-                />
+            {!isLoading && !isError && (
+                <>
+                    <div
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                                'repeat(auto-fit, minmax(180px, 1fr))',
+                            gap: 'var(--space-md)',
+                        }}
+                    >
+                        <StatCard
+                            title="Students"
+                            value={totalStudents}
+                            icon={Users}
+                        />
 
-                <StatCard
-                    title="Average Score"
-                    value="124.8"
-                    icon={BarChart3}
-                />
-            </div>
+                        <StatCard
+                            title="Topics Completed"
+                            value={`${completedTopics}/${topics.length}`}
+                            icon={GraduationCap}
+                        />
 
-            <Card>
-                <h4
-                    style={{
-                        marginBottom: 'var(--space-md)',
-                        fontWeight: 'var(--font-bold)',
-                    }}
-                >
-                    Weekly Performance Trend
-                </h4>
+                        <StatCard
+                            title="Lectures Completed"
+                            value={`${completedLectures}/${lectures.length}`}
+                            icon={ClipboardCheck}
+                        />
 
-                <div style={{ width: '100%', height: 320 }}>
-                    <ResponsiveContainer>
-                        <LineChart data={TREND_DATA}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="week" />
-                            <YAxis domain={[0, 100]} />
-                            <Tooltip />
-                            <Legend />
-                            <Line
-                                type="monotone"
-                                dataKey="attendance"
-                                stroke="currentColor"
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="quiz"
-                                stroke="currentColor"
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="assignment"
-                                stroke="currentColor"
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </Card>
+                        <StatCard
+                            title="Average Score"
+                            value={averageScore}
+                            icon={BarChart3}
+                        />
+                    </div>
 
-            <Card>
-                <h4
-                    style={{
-                        marginBottom: 'var(--space-md)',
-                        fontWeight: 'var(--font-bold)',
-                    }}
-                >
-                    Score Distribution
-                </h4>
+                    <Card>
+                        <h4
+                            style={{
+                                marginBottom:
+                                    'var(--space-md)',
+                                fontWeight:
+                                    'var(--font-bold)',
+                            }}
+                        >
+                            Performance Summary
+                        </h4>
 
-                <div style={{ width: '100%', height: 320 }}>
-                    <ResponsiveContainer>
-                        <BarChart data={SCORE_DISTRIBUTION}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="range" />
-                            <YAxis allowDecimals={false} />
-                            <Tooltip />
-                            <Bar dataKey="students" fill="currentColor" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </Card>
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns:
+                                    'repeat(auto-fit, minmax(180px, 1fr))',
+                                gap: 'var(--space-md)',
+                            }}
+                        >
+                            <div>
+                                <p
+                                    style={{
+                                        color:
+                                            'var(--color-text-secondary)',
+                                    }}
+                                >
+                                    Average Attendance
+                                </p>
+
+                                <strong>
+                                    {formatMetric(
+                                        metrics?.avgAttendance
+                                    )}
+                                    %
+                                </strong>
+                            </div>
+
+                            <div>
+                                <p
+                                    style={{
+                                        color:
+                                            'var(--color-text-secondary)',
+                                    }}
+                                >
+                                    Average Quiz Score
+                                </p>
+
+                                <strong>
+                                    {formatMetric(
+                                        metrics?.avgQuizScore
+                                    )}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <p
+                                    style={{
+                                        color:
+                                            'var(--color-text-secondary)',
+                                    }}
+                                >
+                                    Average Assignment Score
+                                </p>
+
+                                <strong>
+                                    {formatMetric(
+                                        metrics?.avgAssignmentScore
+                                    )}
+                                </strong>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <h4
+                            style={{
+                                marginBottom:
+                                    'var(--space-md)',
+                                fontWeight:
+                                    'var(--font-bold)',
+                            }}
+                        >
+                            Score Distribution
+                        </h4>
+
+                        <div
+                            style={{
+                                width: '100%',
+                                height: 320,
+                            }}
+                        >
+                            <ResponsiveContainer>
+                                <BarChart
+                                    data={scoreDistribution}
+                                >
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                    />
+
+                                    <XAxis dataKey="range" />
+
+                                    <YAxis
+                                        allowDecimals={false}
+                                    />
+
+                                    <Tooltip />
+
+                                    <Bar
+                                        dataKey="students"
+                                        fill="currentColor"
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card>
+                </>
+            )}
         </div>
     );
 }

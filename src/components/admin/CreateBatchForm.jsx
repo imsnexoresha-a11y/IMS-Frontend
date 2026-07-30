@@ -10,6 +10,7 @@ const EMPTY_VALUES = {
   description: '',
   startDate: '',
   endDate: '',
+  status: 'upcoming',
 };
 
 function formatDateForInput(value) {
@@ -64,6 +65,8 @@ export default function CreateBatchForm({
           endDate: formatDateForInput(
             defaultValues.endDate
           ),
+          status:
+            defaultValues.status || 'upcoming',
           teacherIds:
             defaultValues.teacherIds?.map(
               (teacher) =>
@@ -77,6 +80,7 @@ export default function CreateBatchForm({
           teacherIds: [],
         }
     );
+
   }, [defaultValues, reset]);
 
   const toggleTeacher = (teacherId) => {
@@ -118,6 +122,7 @@ export default function CreateBatchForm({
         formData.description?.trim() || '',
       startDate: formData.startDate || null,
       endDate: formData.endDate || null,
+      status: formData.status || 'upcoming',
       teacherIds: formData.teacherIds || [],
     });
   };
@@ -173,7 +178,40 @@ export default function CreateBatchForm({
           {...register('endDate')}
         />
       </div>
+      <div>
+        <label
+          htmlFor="status"
+          style={{
+            display: 'block',
+            marginBottom: 'var(--space-xs)',
+            fontWeight: 'var(--font-bold)',
+          }}
+        >
+          Batch Status
+        </label>
 
+        <select
+          id="status"
+          {...register('status')}
+          style={{
+            width: '100%',
+            padding: 'var(--space-sm)',
+            border: 'var(--border)',
+            background: 'var(--color-surface)',
+            color: 'var(--color-text)',
+          }}
+        >
+          <option value="upcoming">
+            Upcoming
+          </option>
+          <option value="ongoing">
+            Ongoing
+          </option>
+          <option value="completed">
+            Completed
+          </option>
+        </select>
+      </div>
       <div>
         <div
           style={{

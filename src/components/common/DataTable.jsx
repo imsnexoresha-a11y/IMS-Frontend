@@ -1,19 +1,24 @@
 import { useState, useMemo } from 'react';
-import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import {
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+} from 'lucide-react';
+
 import SearchBar from './SearchBar';
 import Pagination from './Pagination';
 import styles from './DataTable.module.css';
 
 /**
- * DataTable — sortable, paginated, searchable table (the workhorse).
+ * DataTable — sortable, paginated, searchable table.
  *
- * @param {Array} columns - [{ key, label, sortable, render }]
- * @param {Array} data - array of row objects
- * @param {number} pageSize - items per page (default 10)
- * @param {boolean} searchable - show search bar
+ * @param {Array} columns
+ * @param {Array} data
+ * @param {number} pageSize
+ * @param {boolean} searchable
  * @param {string} searchPlaceholder
- * @param {Function} onRowClick - optional click handler per row
- * @param {React.ReactNode} toolbarActions - extra buttons for toolbar
+ * @param {Function} onRowClick
+ * @param {React.ReactNode} toolbarActions
  */
 export default function DataTable({
   columns = [],
@@ -26,76 +31,177 @@ export default function DataTable({
   className = '',
 }) {
   const [search, setSearch] = useState('');
-  const [sortKey, setSortKey] = useState(null);
-  const [sortDir, setSortDir] = useState('asc');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] =
+    useState(null);
+  const [sortDir, setSortDir] =
+    useState('asc');
+  const [currentPage, setCurrentPage] =
+    useState(1);
 
   // Filter
   const filtered = useMemo(() => {
-    if (!search) return data;
-    const lower = search.toLowerCase();
+    const lower = search
+      .trim()
+      .toLowerCase();
+
+    if (!lower) {
+      return data;
+    }
+
     return data.filter((row) =>
       columns.some((col) => {
-        const val = row[col.key];
-        return val != null && String(val).toLowerCase().includes(lower);
-      }),
+        const value =
+          typeof col.searchValue ===
+            'function'
+            ? col.searchValue(row)
+            : row[col.key];
+
+        return (
+          value != null &&
+          String(value)
+            .toLowerCase()
+            .includes(lower)
+        );
+      })
     );
   }, [data, search, columns]);
 
   // Sort
   const sorted = useMemo(() => {
-    if (!sortKey) return filtered;
+    if (!sortKey) {
+      return filtered;
+    }
+
     return [...filtered].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      if (aVal == null) return 1;
-      if (bVal == null) return -1;
-      const cmp = typeof aVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal));
-      return sortDir === 'asc' ? cmp : -cmp;
+      const column = columns.find(
+        (col) => col.key === sortKey
+      );
+
+      const aValue =
+        typeof column?.sortValue ===
+          'function'
+          ? column.sortValue(a)
+          : a[sortKey];
+
+      const bValue =
+        typeof column?.sortValue ===
+          'function'
+          ? column.sortValue(b)
+          : b[sortKey];
+
+      if (aValue == null) {
+        return 1;
+      }
+
+      if (bValue == null) {
+        return -1;
+      }
+
+      const comparison =
+        typeof aValue === 'number' &&
+          typeof bValue === 'number'
+          ? aValue - bValue
+          : String(aValue).localeCompare(
+            String(bValue)
+          );
+
+      return sortDir === 'asc'
+        ? comparison
+        : -comparison;
     });
-  }, [filtered, sortKey, sortDir]);
+  }, [
+    filtered,
+    sortKey,
+    sortDir,
+    columns,
+  ]);
 
   // Paginate
-  const totalPages = Math.ceil(sorted.length / pageSize);
-  const paginated = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(
+    sorted.length / pageSize
+  );
+
+  const safeCurrentPage = Math.min(
+    currentPage,
+    Math.max(totalPages, 1)
+  );
+
+  const paginated = sorted.slice(
+    (safeCurrentPage - 1) * pageSize,
+    safeCurrentPage * pageSize
+  );
 
   const handleSort = (key) => {
     if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      setSortDir((direction) =>
+        direction === 'asc'
+          ? 'desc'
+          : 'asc'
+      );
     } else {
       setSortKey(key);
       setSortDir('asc');
     }
+
     setCurrentPage(1);
   };
 
-  const handleSearch = (val) => {
-    setSearch(val);
+  const handleSearch = (value) => {
+    setSearch(value);
     setCurrentPage(1);
   };
 
   const SortIcon = ({ colKey }) => {
-    if (sortKey !== colKey) return <ArrowUpDown size={12} className={styles.sortIcon} />;
+    if (sortKey !== colKey) {
+      return (
+        <ArrowUpDown
+          size={12}
+          className={styles.sortIcon}
+        />
+      );
+    }
+
     return sortDir === 'asc' ? (
-      <ArrowUp size={12} className={styles.sortIcon} />
+      <ArrowUp
+        size={12}
+        className={styles.sortIcon}
+      />
     ) : (
-      <ArrowDown size={12} className={styles.sortIcon} />
+      <ArrowDown
+        size={12}
+        className={styles.sortIcon}
+      />
     );
   };
 
   return (
-    <div className={`${styles.tableWrapper} ${className}`}>
+    <div
+      className={`${styles.tableWrapper} ${className}`}
+    >
       {(searchable || toolbarActions) && (
         <div className={styles.toolbar}>
-          <div className={styles.toolbarLeft}>
+          <div
+            className={styles.toolbarLeft}
+          >
             {searchable && (
               <SearchBar
-                placeholder={searchPlaceholder}
+                placeholder={
+                  searchPlaceholder
+                }
                 onSearch={handleSearch}
               />
             )}
           </div>
-          {toolbarActions && <div className={styles.toolbarRight}>{toolbarActions}</div>}
+
+          {toolbarActions && (
+            <div
+              className={
+                styles.toolbarRight
+              }
+            >
+              {toolbarActions}
+            </div>
+          )}
         </div>
       )}
 
@@ -105,35 +211,77 @@ export default function DataTable({
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`${styles.th} ${col.sortable !== false ? styles.sortable : ''}`}
-                onClick={() => col.sortable !== false && handleSort(col.key)}
+                className={`${styles.th} ${col.sortable !== false
+                    ? styles.sortable
+                    : ''
+                  }`}
+                onClick={() => {
+                  if (
+                    col.sortable !== false
+                  ) {
+                    handleSort(col.key);
+                  }
+                }}
               >
                 {col.label}
-                {col.sortable !== false && <SortIcon colKey={col.key} />}
+
+                {col.sortable !== false && (
+                  <SortIcon
+                    colKey={col.key}
+                  />
+                )}
               </th>
             ))}
           </tr>
         </thead>
+
         <tbody className={styles.striped}>
-          {paginated.map((row, i) => (
-            <tr
-              key={row.id || i}
-              className={`${styles.tr} ${onRowClick ? styles.clickableRow : ''}`}
-              onClick={() => onRowClick?.(row)}
-            >
-              {columns.map((col) => (
-                <td key={col.key} className={styles.td}>
-                  {col.render ? col.render(row[col.key], row) : row[col.key] ?? '—'}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {paginated.map(
+            (row, index) => (
+              <tr
+                key={
+                  row._id ||
+                  row.id ||
+                  index
+                }
+                className={`${styles.tr} ${onRowClick
+                    ? styles.clickableRow
+                    : ''
+                  }`}
+                onClick={() =>
+                  onRowClick?.(row)
+                }
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={styles.td}
+                  >
+                    {col.render
+                      ? col.render(
+                        row[col.key],
+                        row
+                      )
+                      : row[col.key] ??
+                      '—'}
+                  </td>
+                ))}
+              </tr>
+            )
+          )}
+
           {paginated.length === 0 && (
             <tr>
               <td
                 colSpan={columns.length}
                 className={styles.td}
-                style={{ textAlign: 'center', padding: 'var(--space-xl)', color: 'var(--color-text-secondary)' }}
+                style={{
+                  textAlign: 'center',
+                  padding:
+                    'var(--space-xl)',
+                  color:
+                    'var(--color-text-secondary)',
+                }}
               >
                 No data found
               </td>
@@ -143,15 +291,35 @@ export default function DataTable({
       </table>
 
       {totalPages > 1 && (
-        <div className={styles.paginationWrapper}>
-          <span className={styles.pageInfo}>
-            Showing {(currentPage - 1) * pageSize + 1}–
-            {Math.min(currentPage * pageSize, sorted.length)} of {sorted.length}
+        <div
+          className={
+            styles.paginationWrapper
+          }
+        >
+          <span
+            className={styles.pageInfo}
+          >
+            Showing{' '}
+            {(safeCurrentPage - 1) *
+              pageSize +
+              1}
+            –
+            {Math.min(
+              safeCurrentPage *
+              pageSize,
+              sorted.length
+            )}{' '}
+            of {sorted.length}
           </span>
+
           <Pagination
-            currentPage={currentPage}
+            currentPage={
+              safeCurrentPage
+            }
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={
+              setCurrentPage
+            }
           />
         </div>
       )}

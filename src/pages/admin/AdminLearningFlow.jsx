@@ -14,6 +14,7 @@ import AdminTopicForm from '../../components/admin/curriculum/AdminTopicForm';
 import AdminTopicDetails from '../../components/admin/curriculum/AdminTopicDetails';
 
 import AdminLectureList from '../../components/admin/lecture/AdminLectureList';
+import AdminLectureForm from '../../components/admin/lecture/AdminLectureForm';
 
 import AdminAssignmentsPanel from '../../components/admin/assignment/AdminAssignmentsPanel';
 import AdminAttendancePanel from '../../components/admin/attendance/AdminAttendancePanel';
@@ -33,7 +34,13 @@ import {
     useDeleteTopicNote,
 } from '../../hooks/useTopics';
 
-import { useLectures } from '../../hooks/useLectures';
+import {
+    useLectures,
+    useCreateLecture,
+    useUpdateLecture,
+    useUpdateLectureStatus,
+    useDeleteLecture,
+} from '../../hooks/useLectures';
 
 function getEntityId(value) {
     if (!value) {
@@ -290,6 +297,16 @@ export default function AdminLearningFlow() {
         error: lecturesError,
     } = useLectures(selectedBatchId);
 
+    const createLectureMutation = useCreateLecture();
+    const updateLectureMutation = useUpdateLecture();
+    const updateLectureStatusMutation = useUpdateLectureStatus();
+    const deleteLectureMutation = useDeleteLecture();
+
+    const [lectureModalOpen, setLectureModalOpen] = useState(false);
+    const [editingLecture, setEditingLecture] = useState(null);
+    const [lectureToDelete, setLectureToDelete] = useState(null);
+    const [lectureSuccess, setLectureSuccess] = useState('');
+
     const createTopicMutation =
         useCreateTopic();
 
@@ -358,6 +375,14 @@ export default function AdminLearningFlow() {
                         option.value
                 ),
         [batches]
+    );
+
+    const selectedBatch = useMemo(
+        () =>
+            batches.find(
+                (batch) => getEntityId(batch) === selectedBatchId
+            ) || null,
+        [batches, selectedBatchId]
     );
 
     const selectedBatchTopics =
@@ -587,44 +612,47 @@ export default function AdminLearningFlow() {
         }
     };
 
-    const handleUploadNote = async (
-        file
-    ) => {
+
+    const handleUploadNote = async (files) => {
         if (
             !selectedTopic ||
-            !file
+            !files ||
+            files.length === 0
         ) {
             return;
         }
 
-        const formData =
-            new FormData();
+        const selectedFiles = Array.isArray(files)
+            ? files
+            : [files];
 
-        formData.append(
-            'notes',
-            file
-        );
+        if (selectedFiles.length > 5) {
+            setTopicActionError(
+                'You can upload a maximum of 5 files at once.'
+            );
+            return;
+        }
+
+        const formData = new FormData();
+
+        selectedFiles.forEach((file) => {
+            formData.append('notes', file);
+        });
 
         setTopicActionError('');
 
         try {
-            await uploadNotesMutation.mutateAsync(
-                {
-                    batchId:
-                        selectedBatchId,
-
-                    topicId:
-                        getEntityId(
-                            selectedTopic
-                        ),
-
-                    formData,
-                }
-            );
+            await uploadNotesMutation.mutateAsync({
+                batchId: selectedBatchId,
+                topicId: getEntityId(
+                    selectedTopic
+                ),
+                formData,
+            });
         } catch (error) {
             setTopicActionError(
                 error?.message ||
-                'Unable to upload note.'
+                'Unable to upload notes.'
             );
         }
     };
@@ -663,10 +691,209 @@ export default function AdminLearningFlow() {
         }
     };
 
-    const showAdminLectureRestriction = () => {
-        setLectureActionError(
-            'Lecture changes require an instructor profile and are currently unavailable for Admin users.'
+    const openCreateLectureModal = () => {
+        if (!selectedBatchId) {
+            setLectureActionError('Please select a batch first.');
+            return;
+        }
+
+        setEditingLecture(null);
+        setLectureActionError('');
+        setLectureSuccess('');
+        setLectureModalOpen(true);
+    };
+
+    const openEditLectureModal = (lecture) => {
+        setEditingLecture(lecture);
+        setLectureActionError('');
+        setLectureSuccess('');
+        setLectureModalOpen(true);
+    };
+
+    const closeLectureModal = () => {
+        if (
+            createLectureMutation.isPending ||
+            updateLectureMutation.isPending
+        ) {
+            return;
+        }
+
+        setEditingLecture(null);
+        setLectureModalOpen(false);
+        setLectureActionError('');
+    };
+
+    const getCourseIdForLecture = (topicId) => {
+        const selectedTopicForLecture =
+            selectedBatchTopics.find(
+                (topic) =>
+                    getEntityId(topic) === topicId
+            );
+
+        const existingLectureWithCourse =
+            selectedBatchLectures.find(
+                (lecture) =>
+                    getEntityId(lecture.courseId)
+            );
+
+        return (
+            getEntityId(selectedBatch?.courseId) ||
+            getEntityId(selectedBatch?.course) ||
+            getEntityId(selectedBatch?.courses?.[0]) ||
+            getEntityId(selectedTopicForLecture?.courseId) ||
+            getEntityId(selectedTopicForLecture?.course) ||
+            getEntityId(editingLecture?.courseId) ||
+            getEntityId(existingLectureWithCourse?.courseId)
         );
+    };
+
+    const buildLecturePayload = (formData) => {
+        const lectureDate =
+            formData.lectureDate ||
+            formData.date;
+
+        const startTime =
+            formData.startTime;
+
+        if (!lectureDate || !startTime) {
+            throw new Error(
+                'Please enter the lecture date and time.'
+            );
+        }
+
+        const sessionDate = new Date(
+            `${lectureDate}T${startTime}`
+        );
+
+        if (Number.isNaN(sessionDate.getTime())) {
+            throw new Error('Please enter a valid lecture date and time.');
+        }
+
+        const courseId = getCourseIdForLecture(
+            formData.topicId
+        );
+
+        if (!courseId) {
+            throw new Error('The selected batch does not have a course assigned.');
+        }
+        return {
+            batchId: selectedBatchId,
+            courseId,
+            title: formData.title,
+            description:
+                formData.description || '',
+            topicIds: [formData.topicId],
+
+            sessionDateAndTime:
+                sessionDate.toISOString(),
+
+            duration: 120,
+
+            startTime:
+                formData.startTime,
+
+            half1EndTime:
+                formData.halfwayTime ||
+                formData.half1EndTime,
+
+            endTime:
+                formData.endTime,
+
+            meetUrl:
+                formData.meetUrl,
+        };
+    };
+    const handleSaveLecture = async (formData) => {
+        if (
+            createLectureMutation.isPending ||
+            updateLectureMutation.isPending
+        ) {
+            return;
+        }
+
+        setLectureActionError('');
+        setLectureSuccess('');
+
+        try {
+            const data = buildLecturePayload(formData);
+
+            if (editingLecture) {
+                await updateLectureMutation.mutateAsync({
+                    batchId: selectedBatchId,
+                    lectureId: getEntityId(editingLecture),
+                    data,
+                });
+
+                setLectureSuccess('Lecture updated successfully.');
+            } else {
+                await createLectureMutation.mutateAsync({
+                    batchId: selectedBatchId,
+                    data,
+                });
+
+                setLectureSuccess('Lecture scheduled successfully.');
+            }
+
+            setEditingLecture(null);
+            setLectureModalOpen(false);
+        } catch (error) {
+            setLectureActionError(
+                error?.response?.data?.message ||
+                error?.message ||
+                'Unable to save lecture.'
+            );
+        }
+    };
+
+    const handleLectureStatusChange = async (lecture, status) => {
+        if (updateLectureStatusMutation.isPending) {
+            return;
+        }
+
+        setLectureActionError('');
+        setLectureSuccess('');
+
+        try {
+            await updateLectureStatusMutation.mutateAsync({
+                batchId: selectedBatchId,
+                lectureId: getEntityId(lecture),
+                status,
+            });
+
+            setLectureSuccess('Lecture status updated successfully.');
+        } catch (error) {
+            setLectureActionError(
+                error?.response?.data?.message ||
+                error?.message ||
+                'Unable to update lecture status.'
+            );
+        }
+    };
+
+    const handleDeleteLecture = async () => {
+        if (!lectureToDelete || deleteLectureMutation.isPending) {
+            return;
+        }
+
+        setLectureActionError('');
+        setLectureSuccess('');
+
+        try {
+            await deleteLectureMutation.mutateAsync({
+                batchId: selectedBatchId,
+                lectureId: getEntityId(lectureToDelete),
+            });
+
+            setLectureToDelete(null);
+            setLectureSuccess('Lecture deleted successfully.');
+        } catch (error) {
+            setLectureToDelete(null);
+            setLectureActionError(
+                error?.response?.data?.message ||
+                error?.message ||
+                'Unable to delete lecture.'
+            );
+        }
     };
 
     const tabs = [
@@ -742,6 +969,21 @@ export default function AdminLearningFlow() {
 
             content: (
                 <>
+                    {lectureSuccess && (
+                        <div
+                            role="status"
+                            style={{
+                                marginBottom: 'var(--space-md)',
+                                padding: 'var(--space-sm)',
+                                border: '2px solid var(--color-success)',
+                                color: 'var(--color-text-primary)',
+                                fontWeight: 'var(--font-bold)',
+                            }}
+                        >
+                            {lectureSuccess}
+                        </div>
+                    )}
+
                     {lectureActionError && (
                         <div
                             role="alert"
@@ -788,18 +1030,10 @@ export default function AdminLearningFlow() {
                             topics={
                                 selectedBatchTopics
                             }
-                            onAdd={
-                                showAdminLectureRestriction
-                            }
-                            onEdit={
-                                showAdminLectureRestriction
-                            }
-                            onDelete={
-                                showAdminLectureRestriction
-                            }
-                            onStatusChange={
-                                showAdminLectureRestriction
-                            }
+                            onAdd={openCreateLectureModal}
+                            onEdit={openEditLectureModal}
+                            onDelete={setLectureToDelete}
+                            onStatusChange={handleLectureStatusChange}
                         />
                     )}
                 </>
@@ -886,6 +1120,9 @@ export default function AdminLearningFlow() {
 
             content: (
                 <AdminAnalyticsPanel
+                    batchId={
+                        selectedBatchId
+                    }
                     topics={
                         selectedBatchTopics
                     }
@@ -1108,6 +1345,67 @@ export default function AdminLearningFlow() {
                     }
                 />
             </Modal>
+
+            <Modal
+                isOpen={lectureModalOpen}
+                onClose={closeLectureModal}
+                title={editingLecture ? 'Edit Lecture' : 'Schedule Lecture'}
+                size="md"
+            >
+                {lectureActionError && (
+                    <div
+                        role="alert"
+                        style={{
+                            marginBottom: 'var(--space-md)',
+                            color: 'var(--color-danger)',
+                            fontWeight: 'var(--font-bold)',
+                        }}
+                    >
+                        {lectureActionError}
+                    </div>
+                )}
+
+                <AdminLectureForm
+                    key={getEntityId(editingLecture) || 'new-lecture'}
+                    topics={selectedBatchTopics}
+                    defaultValues={
+                        editingLecture
+                            ? {
+                                title: editingLecture.title || '',
+                                topicId: editingLecture.topicId || '',
+                                date: editingLecture.date
+                                    ? new Date(editingLecture.date)
+                                        .toISOString()
+                                        .slice(0, 16)
+                                    : '',
+                                meetUrl: editingLecture.meetUrl || '',
+                                description: editingLecture.description || '',
+                            }
+                            : null
+                    }
+                    onSubmit={handleSaveLecture}
+                    onCancel={closeLectureModal}
+                />
+            </Modal>
+
+            <ConfirmDialog
+                isOpen={Boolean(lectureToDelete)}
+                title="Delete Lecture"
+                message={
+                    lectureToDelete
+                        ? `Delete "${lectureToDelete.title}"? This action cannot be undone.`
+                        : ''
+                }
+                confirmLabel={
+                    deleteLectureMutation.isPending
+                        ? 'Deleting...'
+                        : 'Delete'
+                }
+                variant="danger"
+                loading={deleteLectureMutation.isPending}
+                onConfirm={handleDeleteLecture}
+                onCancel={() => setLectureToDelete(null)}
+            />
 
             <ConfirmDialog
                 isOpen={Boolean(

@@ -15,6 +15,25 @@ function getStudentId(student) {
   return student?._id || student?.id;
 }
 
+function getBatchName(value, batches) {
+  const batchId =
+    typeof value === 'object'
+      ? value?._id || value?.id
+      : value;
+
+  const batch =
+    batches.find(
+      (item) =>
+        String(item._id || item.id) ===
+        String(batchId)
+    ) ||
+    (typeof value === 'object'
+      ? value
+      : null);
+
+  return batch?.name || 'Unassigned';
+}
+
 export default function StudentTable({
   students = [],
   batches = [],
@@ -27,24 +46,78 @@ export default function StudentTable({
 }) {
   const handleDownloadCsv = () => {
     const csvColumns = [
-      { key: 'name', label: 'Name', render: (_, r) => r.userId?.name || r.user?.name || r.name || '' },
-      { key: 'email', label: 'Email', render: (_, r) => r.userId?.email || r.user?.email || r.email || '' },
-      { key: 'enrollementNo', label: 'Enrollment No.' },
-      { key: 'batchId', label: 'Batch', render: (v) => {
-        const batchId = typeof v === 'object' ? v?._id || v?.id : v;
-        const batch = batches.find(b => (b._id || b.id) === batchId) || (typeof v === 'object' ? v : null);
-        return batch?.name || 'Unassigned';
-      }},
-      { key: 'totalPoints', label: 'Score', render: (v) => v ?? 0 },
-      { key: 'profileStatus', label: 'Status', render: (_, r) => r.userId?.profileStatus || r.user?.profileStatus || r.profileStatus || 'Inactive' },
+      {
+        key: 'name',
+        label: 'Name',
+        render: (_, row) =>
+          row.userId?.name ||
+          row.user?.name ||
+          row.name ||
+          '',
+      },
+      {
+        key: 'email',
+        label: 'Email',
+        render: (_, row) =>
+          row.userId?.email ||
+          row.user?.email ||
+          row.email ||
+          '',
+      },
+      {
+        key: 'enrollementNo',
+        label: 'Enrollment No.',
+      },
+      {
+        key: 'batchId',
+        label: 'Batch',
+        render: (value) =>
+          getBatchName(value, batches),
+      },
+      {
+        key: 'totalPoints',
+        label: 'Score',
+        render: (value) => value ?? 0,
+      },
+      {
+        key: 'profileStatus',
+        label: 'Status',
+        render: (_, row) =>
+          row.userId?.profileStatus ||
+          row.user?.profileStatus ||
+          row.profileStatus ||
+          'Inactive',
+      },
     ];
-    const today = new Date().toISOString().split('T')[0];
-    exportToCsv(`students_${today}.csv`, students, csvColumns);
+
+    const today = new Date()
+      .toISOString()
+      .split('T')[0];
+
+    exportToCsv(
+      `students_${today}.csv`,
+      students,
+      csvColumns
+    );
   };
+
   const columns = [
     {
       key: 'name',
       label: 'Name',
+
+      searchValue: (row) =>
+        row.userId?.name ||
+        row.user?.name ||
+        row.name ||
+        '',
+
+      sortValue: (row) =>
+        row.userId?.name ||
+        row.user?.name ||
+        row.name ||
+        '',
+
       render: (_, row) => (
         <strong>
           {row.userId?.name ||
@@ -57,6 +130,19 @@ export default function StudentTable({
     {
       key: 'email',
       label: 'Email',
+
+      searchValue: (row) =>
+        row.userId?.email ||
+        row.user?.email ||
+        row.email ||
+        '',
+
+      sortValue: (row) =>
+        row.userId?.email ||
+        row.user?.email ||
+        row.email ||
+        '',
+
       render: (_, row) =>
         row.userId?.email ||
         row.user?.email ||
@@ -66,32 +152,39 @@ export default function StudentTable({
     {
       key: 'enrollementNo',
       label: 'Enrollment No.',
-      render: (value) => value || '—',
+
+      searchValue: (row) =>
+        row.enrollementNo || '',
+
+      render: (value) =>
+        value || '—',
     },
     {
       key: 'batchId',
       label: 'Batch',
-      render: (value) => {
-        const batchId =
-          typeof value === 'object'
-            ? value?._id || value?.id
-            : value;
 
-        const batch =
-          batches.find(
-            (item) =>
-              (item._id || item.id) === batchId
-          ) ||
-          (typeof value === 'object'
-            ? value
-            : null);
+      searchValue: (row) =>
+        getBatchName(
+          row.batchId,
+          batches
+        ),
 
-        return batch?.name || 'Unassigned';
-      },
+      sortValue: (row) =>
+        getBatchName(
+          row.batchId,
+          batches
+        ),
+
+      render: (value) =>
+        getBatchName(value, batches),
     },
     {
       key: 'totalPoints',
       label: 'Score',
+
+      searchValue: (row) =>
+        row.totalPoints ?? 0,
+
       render: (value) => (
         <strong
           style={{
@@ -105,6 +198,19 @@ export default function StudentTable({
     {
       key: 'profileStatus',
       label: 'Status',
+
+      searchValue: (row) =>
+        row.userId?.profileStatus ||
+        row.user?.profileStatus ||
+        row.profileStatus ||
+        'Inactive',
+
+      sortValue: (row) =>
+        row.userId?.profileStatus ||
+        row.user?.profileStatus ||
+        row.profileStatus ||
+        'Inactive',
+
       render: (_, row) => {
         const status =
           row.userId?.profileStatus ||
@@ -132,8 +238,10 @@ export default function StudentTable({
       key: 'actions',
       label: 'Actions',
       sortable: false,
+
       render: (_, row) => {
-        const studentId = getStudentId(row);
+        const studentId =
+          getStudentId(row);
 
         const status =
           row.userId?.profileStatus ||
@@ -145,7 +253,8 @@ export default function StudentTable({
           status === 'Active';
 
         const isUpdating =
-          updatingStudentId === studentId;
+          updatingStudentId ===
+          studentId;
 
         return (
           <div
@@ -161,9 +270,10 @@ export default function StudentTable({
               variant="ghost"
               size="sm"
               disabled={isUpdating}
-              onClick={() =>
-                onStatusChange?.(row)
-              }
+              onClick={(event) => {
+                event.stopPropagation();
+                onStatusChange?.(row);
+              }}
               title={
                 isActive
                   ? 'Deactivate student'
@@ -178,12 +288,15 @@ export default function StudentTable({
               variant="ghost"
               size="sm"
               disabled={isUpdating}
-              onClick={() =>
-                onMoveBatch?.(row)
-              }
+              onClick={(event) => {
+                event.stopPropagation();
+                onMoveBatch?.(row);
+              }}
               title="Move student to another batch"
             >
-              <ArrowRightLeft size={14} />
+              <ArrowRightLeft
+                size={14}
+              />
             </Button>
           </div>
         );
