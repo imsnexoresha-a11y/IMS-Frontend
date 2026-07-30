@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import Input from '../common/Input';
 import Button from '../common/Button';
@@ -11,11 +11,11 @@ export default function StudentProfileForm({ profile = {}, onSave }) {
   const { updateUserImage, updateUser } = useAuth();
   const displayName = profile.user?.name || profile.name || 'Student';
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
       name: displayName,
-      gitHubUrl: profile.githubLink || profile.gitHubUrl || '',
-      linkedInUrl: profile.linkedinLink || profile.linkedInUrl || '',
+      gitHubUrl: profile.gitHubUrl || profile.githubLink || '',
+      linkedInUrl: profile.linkedInUrl || profile.linkedinLink || '',
       dateOfBirth: profile.dateOfBirth || '',
       educationQualification: profile.educationQualification || '',
       instituteName: profile.instituteName || '',
@@ -23,6 +23,19 @@ export default function StudentProfileForm({ profile = {}, onSave }) {
       resume: profile.resume || '',
     }
   });
+
+  useEffect(() => {
+    reset({
+      name: displayName,
+      gitHubUrl: profile.gitHubUrl || profile.githubLink || '',
+      linkedInUrl: profile.linkedInUrl || profile.linkedinLink || '',
+      dateOfBirth: profile.dateOfBirth || '',
+      educationQualification: profile.educationQualification || '',
+      instituteName: profile.instituteName || '',
+      gender: profile.gender || '',
+      resume: profile.resume || '',
+    });
+  }, [profile, displayName, reset]);
 
   const onSubmit = async (formData) => {
     let base64Pic = null;
