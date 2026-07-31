@@ -205,30 +205,26 @@ export default function RecruiterLinkManager({
     <Card
       title="Recruiter Links"
       headerAction={
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          onClick={handleGenerateSelected}
-          disabled={
-            !selectedBatchId ||
-            Boolean(generatingBatchId) ||
-            selectedBatchAlreadyLinked
-          }
-          title={
-            selectedBatchAlreadyLinked
-              ? 'This batch already has an active recruiter link'
-              : 'Generate recruiter link'
-          }
-        >
-          <Plus size={16} />
-
-          {generatingBatchId
-            ? 'Generating...'
-            : selectedBatchAlreadyLinked
-              ? 'Link Already Active'
-              : 'Generate Link'}
-        </Button>
+        selectedBatchAlreadyLinked ? (
+          <Badge variant="success" dot>
+            Link Active
+          </Badge>
+        ) : (
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={handleGenerateSelected}
+            disabled={
+              !selectedBatchId ||
+              Boolean(generatingBatchId)
+            }
+            title="Generate recruiter link"
+          >
+            <Plus size={16} />
+            {generatingBatchId ? 'Generating...' : 'Generate Link'}
+          </Button>
+        )
       }
     >
       <div
