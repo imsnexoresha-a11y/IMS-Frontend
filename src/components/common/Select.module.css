@@ -26,6 +26,7 @@
   color: var(--color-ink);
   background-color: var(--color-surface);
   border: var(--border);
+  border-radius: 10px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   appearance: none;

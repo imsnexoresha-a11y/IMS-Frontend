@@ -28,16 +28,16 @@ export default function TeacherUpcomingLectures() {
           {upcoming.map((lecture) => (
             <div 
               key={lecture._id || lecture.id} 
+              className="student-block-hover"
               onClick={() => navigate(`/teacher/batches/${lecture.batchId}`, { state: { activeTab: 2 } })}
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: 'var(--space-sm) var(--space-md)',
                 border: '2px solid var(--color-neutral)',
+                borderRadius: 'var(--radius-card, 16px)',
                 cursor: 'pointer',
-                transition: 'border-color var(--transition-fast)',
+                overflow: 'hidden'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-neutral)'}
             >
               <div>
                 <div style={{ fontWeight: 'var(--font-bold)', fontSize: 'var(--text-sm)' }}>{lecture.title}</div>

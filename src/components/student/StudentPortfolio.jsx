@@ -34,22 +34,173 @@ export default function StudentPortfolio() {
     try {
       const printWindow = window.open('', '_blank');
       printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
           <head>
             <title>Portfolio - ${portfolioData?.profile?.enrollementNo || 'Student'}</title>
             <style>
-              body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #222; margin: 0; padding: 40px; }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-              th { background-color: #f4f4f5; font-weight: bold; padding: 12px; text-align: left; border-bottom: 2px solid #222; }
-              td { border-bottom: 1px solid #e4e4e7; padding: 12px; text-align: left; }
-              h1 { font-size: 36px; margin: 0 0 10px 0; font-weight: 900; letter-spacing: -1px; color: #111; }
-              h2 { font-size: 20px; background-color: #18181b; color: white; padding: 10px 16px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px; border-radius: 4px; }
-              .header-info { margin: 0 0 5px 0; font-size: 16px; color: #555; }
-              .skill-tag { display: inline-block; border: 1px solid #d4d4d8; padding: 6px 14px; border-radius: 20px; background-color: #fafafa; font-size: 14px; margin: 4px; font-weight: 500; }
-              img { border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+              * { box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                background-color: #FAF8F5;
+                color: #2E2E2E;
+                margin: 0;
+                padding: 40px;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .pdf-wrapper {
+                width: 100%;
+                max-width: 840px;
+                margin: 0 auto;
+                background: #FAF8F5;
+              }
+              .hero-card {
+                background: #FFFFFF;
+                border: 1.5px solid #EFEBE4;
+                border-top: 4px solid #FF5D00;
+                border-radius: 16px;
+                padding: 26px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.03);
+              }
+              .avatar {
+                width: 90px;
+                height: 90px;
+                border-radius: 16px;
+                object-fit: cover;
+                border: 3px solid #FF5D00;
+              }
+              .avatar-placeholder {
+                width: 90px;
+                height: 90px;
+                border-radius: 16px;
+                background: #FFF4EE;
+                border: 3px solid #FF5D00;
+                color: #FF5D00;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 28px;
+                font-weight: 900;
+              }
+              .top-performer-tag {
+                background: #FFF4EE;
+                border: 1.5px solid #FF9B66;
+                border-radius: 12px;
+                padding: 10px 18px;
+                text-align: center;
+              }
+              .metrics-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 14px;
+                margin-bottom: 24px;
+              }
+              .metric-box {
+                background: #FFFFFF;
+                border: 1.5px solid #EFEBE4;
+                border-radius: 14px;
+                padding: 16px;
+                text-align: center;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+              }
+              .metric-val {
+                font-size: 22px;
+                font-weight: 900;
+                color: #FF5D00;
+                margin-top: 4px;
+              }
+              .metric-lbl {
+                font-size: 11px;
+                font-weight: 800;
+                text-transform: uppercase;
+                color: #777;
+                letter-spacing: 0.5px;
+              }
+              .section-card {
+                background: #FFFFFF;
+                border: 1.5px solid #EFEBE4;
+                border-radius: 16px;
+                padding: 22px;
+                margin-bottom: 24px;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.02);
+              }
+              .section-head {
+                font-size: 15px;
+                font-weight: 800;
+                color: #FF5D00;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-top: 0;
+                margin-bottom: 16px;
+                padding-bottom: 6px;
+                border-bottom: 2px solid #FFF0E6;
+              }
+              .skill-chip {
+                display: inline-block;
+                background: #FAF8F5;
+                border: 1.5px solid #FF5D00;
+                color: #FF5D00;
+                font-weight: 700;
+                font-size: 13px;
+                padding: 6px 14px;
+                border-radius: 20px;
+                margin: 4px;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+              }
+              thead tr {
+                background: #F4EFE6;
+              }
+              th {
+                padding: 12px 14px;
+                font-size: 12px;
+                font-weight: 800;
+                text-transform: uppercase;
+                color: #444;
+                text-align: left;
+                border-bottom: 2px solid #E6DFD5;
+              }
+              tbody tr:nth-child(even) {
+                background: #FAF8F5;
+              }
+              td {
+                padding: 12px 14px;
+                font-size: 13px;
+                border-bottom: 1px solid #F0EBE1;
+                color: #2E2E2E;
+              }
+              .status-pill {
+                display: inline-block;
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 800;
+                text-transform: uppercase;
+              }
+              .status-success { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
+              .status-warning { background: #FFF8E1; color: #F57F17; border: 1px solid #FFE082; }
+              .footer-stamp {
+                background: #F3EEE6;
+                border: 1px solid #E6DFD5;
+                border-radius: 14px;
+                padding: 16px 24px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 12px;
+                color: #666;
+                margin-top: 30px;
+              }
               @media print {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                body { padding: 20px; background-color: #FAF8F5; }
+                .pdf-wrapper { width: 100%; }
               }
             </style>
           </head>
@@ -109,7 +260,7 @@ export default function StudentPortfolio() {
                   backgroundPosition: 'center',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 0 30px rgba(255, 111, 32, 0.4)',
-                  borderRadius: 'var(--radius-sm)',
+                  borderRadius: '16px',
                   cursor: 'pointer'
               }}>
                 {!profilePic && (
@@ -132,7 +283,7 @@ export default function StudentPortfolio() {
             
             <div style={{ 
               textAlign: 'center', padding: 'var(--space-sm) var(--space-lg)', 
-              border: 'var(--border)', backgroundColor: 'var(--color-warning-bg)',
+              border: 'var(--border)', borderRadius: '12px', backgroundColor: 'var(--color-warning-bg)',
               boxShadow: 'var(--shadow-sm)'
             }}>
               <div style={{ fontSize: '1.5rem' }}>🏆</div>
@@ -158,6 +309,7 @@ export default function StudentPortfolio() {
                   padding: 'var(--space-xs) var(--space-md)', 
                   backgroundColor: 'var(--color-bg)', 
                   border: 'var(--border)',
+                  borderRadius: '10px',
                   fontSize: 'var(--text-sm)',
                   fontWeight: 'var(--font-bold)',
                   boxShadow: 'var(--shadow-sm)'
@@ -183,6 +335,7 @@ export default function StudentPortfolio() {
                   style={{
                     padding: 'var(--space-md) var(--space-lg)',
                     border: 'var(--border)',
+                    borderRadius: '12px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -206,9 +359,10 @@ export default function StudentPortfolio() {
                     textTransform: 'uppercase',
                     backgroundColor: item.reviewStatus === 'completed' ? 'var(--color-success)' : 'var(--color-warning)',
                     color: 'white',
-                    border: 'var(--border)'
+                    border: 'var(--border)',
+                    borderRadius: '8px'
                   }}>
-                    {item.reviewStatus === 'completed' ? 'Reviewed' : 'Pending'}
+                    {item.reviewStatus === 'completed' ? 'Reviewed' : 'Pending Review'}
                   </div>
                 </div>
               ))}
@@ -254,127 +408,146 @@ export default function StudentPortfolio() {
         </Card>
       </div>
 
-      {/* 
-        HIDDEN PDF TEMPLATE 
-        This acts as the genuine, formal resume-style PDF export template.
-      */}
-      <div 
-        style={{ overflow: 'hidden', height: 0 }}
-      >
-        <div 
-          ref={pdfTemplateRef} 
-          style={{ 
-            padding: '40px', 
-            fontFamily: 'Helvetica, Arial, sans-serif', 
-            color: 'black', 
-            background: 'white',
-            width: '800px'
-          }}
-        >
-        {/* PDF Header */}
-        <div style={{ borderBottom: '2px solid #e4e4e7', paddingBottom: '30px', marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h1>{displayName}</h1>
-            <p className="header-info"><strong>Enrollment No:</strong> {profile?.enrollementNo || 'N/A'}</p>
-            <p className="header-info" style={{ color: '#888', fontSize: '14px' }}>Generated on: {new Date().toLocaleDateString()}</p>
-          </div>
-          {profilePic && (
-            <img src={profilePic} alt="Profile" style={{ width: '120px', height: '120px', objectFit: 'cover' }} />
-          )}
-        </div>
-
-        {/* Overview Section */}
-        <h2>Overview & Metrics</h2>
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
-          <tbody>
-            <tr>
-              <td style={{ backgroundColor: '#fafafa', fontWeight: '600' }}>Total Points</td>
-              <td>{metrics.totalPoints || 0} XP</td>
-              <td style={{ backgroundColor: '#fafafa', fontWeight: '600' }}>Batch Rank</td>
-              <td>#{metrics.rank || '--'}</td>
-            </tr>
-            <tr>
-              <td style={{ backgroundColor: '#fafafa', fontWeight: '600' }}>Assignment Avg</td>
-              <td>{metrics.assignmentAvgScore || 0}%</td>
-              <td style={{ backgroundColor: '#fafafa', fontWeight: '600' }}>Attendance</td>
-              <td>{metrics.attendancePercentage || 0}%</td>
-            </tr>
-          </tbody>
-        </table>
-
-        {/* Skills Section */}
-        {profile.skills && profile.skills.length > 0 && (
-          <>
-            <h2>Technical Skills</h2>
-            <div style={{ marginBottom: '40px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {profile.skills.map((skill, i) => (
-                <span key={i} className="skill-tag">{skill}</span>
-              ))}
+      {/* HIDDEN ELEGANT LIGHT BEIGE PDF TEMPLATE */}
+      <div style={{ overflow: 'hidden', height: 0 }}>
+        <div ref={pdfTemplateRef} className="pdf-wrapper">
+          {/* Executive Hero Card */}
+          <div className="hero-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {profilePic ? (
+                <img src={profilePic} alt="Profile" className="avatar" />
+              ) : (
+                <div className="avatar-placeholder">
+                  {displayName.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h1 style={{ fontSize: '26px', fontWeight: '900', margin: '0 0 6px 0', color: '#111' }}>{displayName}</h1>
+                <p style={{ margin: '0 0 6px 0', color: '#555', fontSize: '14px' }}>
+                  Enrollment No: <strong style={{ color: '#2E2E2E' }}>{profile?.enrollementNo || 'N/A'}</strong>
+                </p>
+                <div style={{ display: 'flex', gap: '14px', fontSize: '13px', color: '#FF5D00', fontWeight: '700' }}>
+                  {profile.githubLink && <span>GitHub Portfolio ↗</span>}
+                  {profile.linkedinLink && <span>LinkedIn Profile ↗</span>}
+                </div>
+              </div>
             </div>
-          </>
-        )}
 
-        {/* Assignments Section */}
-        <h2>Recent Assignments</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Assignment</th>
-              <th>Submitted On</th>
-              <th>Status</th>
-              <th>On Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assignments.map((item, idx) => (
-              <tr key={idx} style={{ borderBottom: '1px solid #ccc' }}>
-                <td style={{ padding: '12px' }}>{item.assignment?.title || 'Unknown'}</td>
-                <td style={{ padding: '12px' }}>{item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'N/A'}</td>
-                <td style={{ padding: '12px' }}>{item.reviewStatus === 'completed' ? 'Reviewed' : 'Pending'}</td>
-                <td style={{ padding: '12px' }}>{item.onTimeSubmission ? 'Yes' : 'No'}</td>
-              </tr>
-            ))}
-            {assignments.length === 0 && (
-              <tr>
-                <td colSpan="4" style={{ padding: '12px', textAlign: 'center' }}>No submissions found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            <div className="top-performer-tag">
+              <div style={{ fontSize: '22px' }}>🏆</div>
+              <div style={{ fontSize: '11px', fontWeight: '900', color: '#FF5D00', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '2px' }}>Top Performer</div>
+            </div>
+          </div>
 
-        {/* Lectures & Quizzes Summary Section */}
-        <h2>Academic Summary</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Module / Topic</th>
-              <th>Type</th>
-              <th>Completion / Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <td style={{ padding: '12px' }}>React Fundamentals</td>
-              <td style={{ padding: '12px' }}>Quiz</td>
-              <td style={{ padding: '12px' }}>90% Score</td>
-            </tr>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <td style={{ padding: '12px' }}>Advanced State Management</td>
-              <td style={{ padding: '12px' }}>Quiz</td>
-              <td style={{ padding: '12px' }}>85% Score</td>
-            </tr>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <td style={{ padding: '12px' }}>Modern CSS & Styling</td>
-              <td style={{ padding: '12px' }}>Lecture Series</td>
-              <td style={{ padding: '12px' }}>100% Attended</td>
-            </tr>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <td style={{ padding: '12px' }}>Backend API Integration</td>
-              <td style={{ padding: '12px' }}>Lecture Series</td>
-              <td style={{ padding: '12px' }}>80% Attended</td>
-            </tr>
-          </tbody>
-        </table>
+          {/* Metric Cards Row */}
+          <div className="metrics-grid">
+            <div className="metric-box">
+              <div className="metric-lbl">Total Points</div>
+              <div className="metric-val">{metrics.totalPoints || 0} XP</div>
+            </div>
+            <div className="metric-box">
+              <div className="metric-lbl">Batch Rank</div>
+              <div className="metric-val">#{metrics.rank || '--'}</div>
+            </div>
+            <div className="metric-box">
+              <div className="metric-lbl">Assignment Avg</div>
+              <div className="metric-val">{metrics.assignmentAvgScore || 0}%</div>
+            </div>
+            <div className="metric-box">
+              <div className="metric-lbl">Attendance</div>
+              <div className="metric-val">{metrics.attendancePercentage || 0}%</div>
+            </div>
+          </div>
+
+          {/* Technical Skills */}
+          {profile.skills && profile.skills.length > 0 && (
+            <div className="section-card">
+              <div className="section-head">Technical Skills</div>
+              <div>
+                {profile.skills.map((skill, i) => (
+                  <span key={i} className="skill-chip">{skill}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Assignments Timeline */}
+          <div className="section-card">
+            <div className="section-head">Recent Assignments & Submissions</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Assignment</th>
+                  <th>Submitted On</th>
+                  <th>Status</th>
+                  <th>On Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignments.map((item, idx) => (
+                  <tr key={idx}>
+                    <td style={{ fontWeight: '700' }}>{item.assignment?.title || 'Assignment'}</td>
+                    <td>{item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'N/A'}</td>
+                    <td>
+                      <span className={`status-pill ${item.reviewStatus === 'completed' ? 'status-success' : 'status-warning'}`}>
+                        {item.reviewStatus === 'completed' ? 'Reviewed' : 'Pending Review'}
+                      </span>
+                    </td>
+                    <td>{item.onTimeSubmission ? 'Yes ✅' : 'No ⏳'}</td>
+                  </tr>
+                ))}
+                {assignments.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '16px', color: '#777' }}>No assignment submissions recorded yet.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Academic Summary */}
+          <div className="section-card">
+            <div className="section-head">Academic Summary & Modules</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Module / Topic</th>
+                  <th>Type</th>
+                  <th>Completion / Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ fontWeight: '700' }}>React Fundamentals</td>
+                  <td>Quiz</td>
+                  <td style={{ color: '#2E7D32', fontWeight: '800' }}>90% Score</td>
+                </tr>
+                <tr>
+                  <td style={{ fontWeight: '700' }}>Advanced State Management</td>
+                  <td>Quiz</td>
+                  <td style={{ color: '#2E7D32', fontWeight: '800' }}>85% Score</td>
+                </tr>
+                <tr>
+                  <td style={{ fontWeight: '700' }}>Modern CSS & Styling</td>
+                  <td>Lecture Series</td>
+                  <td style={{ fontWeight: '700' }}>100% Attended</td>
+                </tr>
+                <tr>
+                  <td style={{ fontWeight: '700' }}>Backend API Integration</td>
+                  <td>Lecture Series</td>
+                  <td style={{ fontWeight: '700' }}>80% Attended</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Watermark Seal Footer */}
+          <div className="footer-stamp">
+            <div>
+              <strong>IMS ACADEMIC PORTFOLIO RECORD</strong> • Generated on {new Date().toLocaleDateString()}
+            </div>
+            <div style={{ color: '#FF5D00', fontWeight: '800' }}>System Verified Credential</div>
+          </div>
         </div>
       </div>
     </div>

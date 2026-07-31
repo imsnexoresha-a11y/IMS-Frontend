@@ -231,6 +231,7 @@ export default function ForgotPassword() {
     maxWidth: '480px',
     padding: 'var(--space-2xl)',
     border: 'var(--border)',
+    borderRadius: 'var(--radius-card, 16px)',
     boxShadow: 'var(--shadow-offset)',
     backgroundColor: 'var(--color-surface)',
   };

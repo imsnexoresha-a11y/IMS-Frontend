@@ -28,8 +28,8 @@ export default function TeacherProfileForm({ profile = {}, onSave }) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', maxWidth: '600px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
+    <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', width: '100%' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-md)' }}>
         <Input
           label="Full Name"
           name="name"
@@ -46,22 +46,24 @@ export default function TeacherProfileForm({ profile = {}, onSave }) {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-md)' }}>
         <Input
           label="Phone Number"
           name="phone"
+          placeholder="+91 9876543210"
           error={errors.phone?.message}
           {...register('phone')}
         />
         <Input
           label="Specialization / Subject"
           name="specialization"
+          placeholder="e.g. Full Stack Web Development"
           error={errors.specialization?.message}
           {...register('specialization')}
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-md)' }}>
         <Input
           label="Professional Designation"
           name="designation"
@@ -83,7 +85,7 @@ export default function TeacherProfileForm({ profile = {}, onSave }) {
       <Textarea
         label="Instructor Biography"
         name="bio"
-        placeholder="Brief description about yourself (will be visible on recruiter page)..."
+        placeholder="Brief description about your teaching experience, tech stack, and background..."
         error={errors.bio?.message}
         {...register('bio', {
           maxLength: {
@@ -93,14 +95,14 @@ export default function TeacherProfileForm({ profile = {}, onSave }) {
         })}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-xs)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', padding: 'var(--space-md)', background: 'var(--color-bg)', borderRadius: '12px', border: '1px solid var(--color-neutral)' }}>
         <div style={{
-          width: '72px',
-          height: '72px',
-          borderRadius: '50%',
-          border: '3px solid var(--color-neutral)',
-          boxShadow: 'var(--shadow-offset)',
-          backgroundColor: 'var(--color-bg)',
+          width: '64px',
+          height: '64px',
+          borderRadius: '16px',
+          border: '2px solid var(--color-accent)',
+          boxShadow: 'var(--shadow-sm)',
+          backgroundColor: 'var(--color-surface)',
           backgroundImage: profile.profileImage
             ? `url(${profile.profileImage.startsWith('http') ? profile.profileImage : `http://localhost:4000/${profile.profileImage}`})`
             : 'none',
@@ -112,29 +114,29 @@ export default function TeacherProfileForm({ profile = {}, onSave }) {
           overflow: 'hidden'
         }}>
           {!profile.profileImage && (
-            <span style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-black)', color: 'var(--color-neutral)' }}>
+            <span style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-black)', color: 'var(--color-accent)' }}>
               {profile.name?.slice(0, 2).toUpperCase() || 'TR'}
             </span>
           )}
         </div>
-        <div>
-          <div style={{ fontWeight: 'var(--font-black)', fontSize: 'var(--text-xs)' }}>Current Photo</div>
-          <div style={{ fontSize: 'var(--text-xxs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-            Updates in real-time on the sidebar and recruiter portfolio.
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 'var(--font-bold)', fontSize: 'var(--text-sm)', color: 'var(--color-ink)' }}>Instructor Photo</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+            Upload a professional avatar (JPEG, PNG, WebP up to 5MB).
           </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: 'var(--space-xs)' }}>
+      <div>
         <FileUpload
-          label="Upload New Profile Picture"
+          label="Upload New Photo"
           accept=".jpg,.jpeg,.png,.webp"
           maxSizeMB={5}
           onFileSelect={(file) => setProfileImage(file)}
         />
       </div>
 
-      <Button variant="primary" type="submit" fullWidth>
+      <Button variant="primary" type="submit" style={{ marginTop: 'var(--space-xs)' }}>
         Save Profile Details
       </Button>
     </form>

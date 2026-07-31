@@ -183,13 +183,16 @@ export default function TopicList({ batchId }) {
             const isCompleted = isTopicCompleted(topic);
             return (
               <div key={topic.id}
+                className="student-block-hover"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 'var(--space-md)',
                   padding: 'var(--space-md) var(--space-lg)',
                   border: 'var(--border-width) solid var(--border-color)',
                   backgroundColor: 'var(--color-surface)',
                   boxShadow: 'var(--shadow-offset)',
-                  position: 'relative'
+                  borderRadius: 'var(--radius-card, 16px)',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
               >
                 <span style={{ fontWeight: 'var(--font-black)', color: 'var(--color-accent)', minWidth: '24px', fontSize: 'var(--text-md)' }}>

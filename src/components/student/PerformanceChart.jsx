@@ -12,16 +12,16 @@ export default function PerformanceChart({ data = [] }) {
   ];
 
   return (
-    <Card title="Performance Trend">
+    <Card title="Performance Trend" className="student-block-hover">
       <div style={{ height: '300px', width: '100%', marginTop: 'var(--space-md)' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={[]} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+          <LineChart data={mockData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
             <Line type="monotone" dataKey="score" stroke="var(--color-accent)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
             <CartesianGrid stroke="var(--color-neutral)" strokeDasharray="5 5" vertical={false} />
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }} dy={10} />
             <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }} dx={-10} />
             <Tooltip
-              contentStyle={{ backgroundColor: 'var(--color-surface)', border: '2px solid var(--color-ink)', borderRadius: 0, boxShadow: 'var(--shadow-offset)', fontWeight: 'bold' }}
+              contentStyle={{ backgroundColor: 'var(--color-surface)', border: '2px solid var(--color-ink)', borderRadius: '12px', boxShadow: 'var(--shadow-offset)', fontWeight: 'bold' }}
               itemStyle={{ color: 'var(--color-accent)' }}
             />
           </LineChart>

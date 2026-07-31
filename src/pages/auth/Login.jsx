@@ -78,6 +78,7 @@ export default function Login() {
           maxWidth: '400px',
           backgroundColor: 'var(--color-surface)',
           border: 'var(--border)',
+          borderRadius: 'var(--radius-card, 16px)',
           boxShadow: 'var(--shadow-offset)',
           padding: 'var(--space-2xl)',
         }}

@@ -1,9 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { KeyRound, Lock, Mail, ShieldCheck, Eye, EyeOff, CheckCircle2, AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import apiClient from '../../api/apiClient';
 import { useToast } from '../common/Toast';
-import Button from '../common/Button';
-import Input from '../common/Input';
 import { useAuth } from '../../hooks/useAuth';
+import styles from './ChangePasswordForm.module.css';
+
+// 6-digit glass OTP Input Component
+function GlassOtpInput({ value, onChange }) {
+  const inputs = useRef([]);
+
+  const handleChange = (index, e) => {
+    const char = e.target.value.replace(/\D/g, '').slice(-1);
+    const arr = value.split('');
+    arr[index] = char;
+    const next = arr.join('');
+    onChange(next);
+    if (char && index < 5) {
+      inputs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !value[index] && index > 0) {
+      inputs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    onChange(pasted.padEnd(6, ' ').slice(0, 6).trimEnd());
+    e.preventDefault();
+    inputs.current[Math.min(pasted.length, 5)]?.focus();
+  };
+
+  return (
+    <div className={styles.otpContainer}>
+      {Array.from({ length: 6 }).map((_, i) => {
+        const val = value[i] || '';
+        return (
+          <input
+            key={i}
+            ref={(el) => (inputs.current[i] = el)}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={1}
+            autoComplete="one-time-code"
+            name={`otp_digit_${i}`}
+            value={val}
+            onChange={(e) => handleChange(i, e)}
+            onKeyDown={(e) => handleKeyDown(i, e)}
+            onPaste={handlePaste}
+            className={`${styles.otpBox} ${val ? styles.otpBoxFilled : ''}`}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// Custom Glass Password Input with Show/Hide Toggle
+function GlassPasswordInput({ label, name, value, onChange, placeholder, required = true, autoComplete = 'new-password', minLength = 6 }) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className={styles.inputFieldWrapper}>
+      <label className={styles.inputLabel}>
+        {label} {required && <span className={styles.requiredStar}>*</span>}
+      </label>
+      <div className={styles.inputRel}>
+        <input
+          type={show ? 'text' : 'password'}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          minLength={minLength}
+          autoComplete={autoComplete}
+          className={styles.glassInput}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => setShow(!show)}
+          className={styles.eyeToggleBtn}
+          title={show ? 'Hide password' : 'Show password'}
+        >
+          {show ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function ChangePasswordForm() {
   const { user } = useAuth();
@@ -35,7 +124,16 @@ export default function ChangePasswordForm() {
     if (toast?.error) toast.error('Error', msg);
   };
 
-  // Mode 1: Direct Password Change using Current Password
+  const resetFormState = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setOtp('');
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
+  // Mode 1: Direct Password Change
   const handleDirectChange = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -55,9 +153,7 @@ export default function ChangePasswordForm() {
         newPassword
       });
       notifySuccess('Password changed successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      resetFormState();
     } catch (error) {
       notifyError(error.response?.data?.message || 'Failed to change password. Please check your current password.');
     } finally {
@@ -91,7 +187,8 @@ export default function ChangePasswordForm() {
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (otp.trim().length < 6) {
+    const cleanOtp = otp.trim();
+    if (cleanOtp.length < 6) {
       return notifyError('Please enter the complete 6-digit OTP code.');
     }
     if (newPassword.length < 6) {
@@ -105,13 +202,11 @@ export default function ChangePasswordForm() {
     try {
       await apiClient.post('/auth/reset-password', {
         email: userEmail.trim().toLowerCase(),
-        otp: otp.trim(),
+        otp: cleanOtp,
         newPassword
       });
       notifySuccess('Password reset successfully with OTP!');
-      setNewPassword('');
-      setConfirmPassword('');
-      setOtp('');
+      resetFormState();
       setOtpStep(1);
       setMode('direct');
     } catch (error) {
@@ -122,154 +217,184 @@ export default function ChangePasswordForm() {
   };
 
   return (
-    <div style={{ padding: 'var(--space-sm)' }}>
-      {/* Option Mode Switcher */}
-      <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)', flexWrap: 'wrap' }}>
+    <div className={styles.glassCard}>
+      {/* Card Header */}
+      <div className={styles.glassHeader}>
+        <div className={styles.titleRow}>
+          <div className={styles.titleIcon}>
+            <ShieldCheck size={22} />
+          </div>
+          <h3 className={styles.titleText}>Account Security</h3>
+        </div>
+        <p className={styles.subtitleText}>Manage your password and authentication settings safely.</p>
+      </div>
+
+      {/* Mode Switcher Tabs */}
+      <div className={styles.tabGroup}>
         <button
           type="button"
-          onClick={() => { setMode('direct'); setOtpStep(1); setErrorMessage(''); setSuccessMessage(''); }}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: mode === 'direct' ? '2px solid var(--color-primary)' : '1px solid var(--border-color)',
-            backgroundColor: mode === 'direct' ? 'var(--color-primary-light)' : 'transparent',
-            color: mode === 'direct' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-            fontWeight: 'bold',
-            cursor: 'pointer'
+          onClick={() => {
+            setMode('direct');
+            setOtpStep(1);
+            resetFormState();
           }}
+          className={`${styles.tabButton} ${mode === 'direct' ? styles.activeTab : ''}`}
         >
-          🔑 Change Direct (Know Current Password)
+          <Lock size={15} />
+          Change Password
         </button>
         <button
           type="button"
-          onClick={() => { setMode('otp'); setOtpStep(1); setErrorMessage(''); setSuccessMessage(''); }}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: mode === 'otp' ? '2px solid var(--color-primary)' : '1px solid var(--border-color)',
-            backgroundColor: mode === 'otp' ? 'var(--color-primary-light)' : 'transparent',
-            color: mode === 'otp' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-            fontWeight: 'bold',
-            cursor: 'pointer'
+          onClick={() => {
+            setMode('otp');
+            setOtpStep(1);
+            resetFormState();
           }}
+          className={`${styles.tabButton} ${mode === 'otp' ? styles.activeTab : ''}`}
         >
-          📩 Forgot Current Password? (Reset via Gmail OTP)
+          <Mail size={15} />
+          Reset via Gmail OTP
         </button>
       </div>
 
-      {/* Global Inline Alerts */}
+      {/* Global Alerts */}
       {errorMessage && (
-        <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', borderRadius: '6px', marginBottom: 'var(--space-md)', fontSize: '0.9rem', fontWeight: 'bold' }}>
-          ⚠️ {errorMessage}
+        <div className={`${styles.statusAlert} ${styles.errorAlert}`}>
+          <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>{errorMessage}</div>
         </div>
       )}
       {successMessage && (
-        <div style={{ padding: '10px 14px', backgroundColor: '#f0fdf4', border: '1px solid #86efac', color: '#166534', borderRadius: '6px', marginBottom: 'var(--space-md)', fontSize: '0.9rem', fontWeight: 'bold' }}>
-          ✅ {successMessage}
+        <div className={`${styles.statusAlert} ${styles.successAlert}`}>
+          <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>{successMessage}</div>
         </div>
       )}
 
       {/* Mode 1: Direct Password Change */}
       {mode === 'direct' && (
-        <form onSubmit={handleDirectChange} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', maxWidth: '420px' }}>
-          <Input
+        <form onSubmit={handleDirectChange} autoComplete="off">
+          {/* Hidden dummy inputs to bypass Chrome autofill heuristic */}
+          <input type="text" name="prevent_autofill_user" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+          <input type="password" name="prevent_autofill_pass" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+
+          <GlassPasswordInput
             label="Current Password"
-            type="password"
+            name="user_current_password_field"
             placeholder="Enter current password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
+            autoComplete="off"
             required
           />
-          <Input
+
+          <GlassPasswordInput
             label="New Password"
-            type="password"
+            name="newPassword"
             placeholder="Enter new password (min 6 chars)"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-          <Input
-            label="Confirm New Password"
-            type="password"
-            placeholder="Re-enter new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
             required
             minLength={6}
           />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-xs)' }}>
-            <Button type="submit" variant="primary" disabled={isLoading}>
-              {isLoading ? 'Updating...' : 'Update Password Directly'}
-            </Button>
-            <button
-              type="button"
-              onClick={() => { setMode('otp'); setOtpStep(1); setErrorMessage(''); setSuccessMessage(''); }}
-              style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }}
-            >
-              Forgot Current Password?
-            </button>
-          </div>
+          <GlassPasswordInput
+            label="Confirm New Password"
+            name="confirmPassword"
+            placeholder="Re-enter new password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            required
+            minLength={6}
+          />
+
+          <button type="submit" className={styles.glassSubmitBtn} disabled={isLoading}>
+            <KeyRound size={18} />
+            {isLoading ? 'Updating Password...' : 'Update Password Directly'}
+          </button>
         </form>
       )}
 
       {/* Mode 2: Forgot Password via OTP */}
       {mode === 'otp' && (
-        <div style={{ maxWidth: '420px' }}>
+        <div>
           {otpStep === 1 && (
-            <form onSubmit={handleSendOtp} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-                Click below to send a 6-digit OTP code to your Gmail address: <strong>{userEmail}</strong>
-              </p>
-              <Button type="submit" variant="primary" disabled={isLoading}>
+            <form onSubmit={handleSendOtp} autoComplete="off">
+              <div className={`${styles.statusAlert} ${styles.infoAlert}`}>
+                <Mail size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  Click below to send a 6-digit OTP verification code to your email: <strong>{userEmail}</strong>
+                </div>
+              </div>
+
+              <button type="submit" className={styles.glassSubmitBtn} disabled={isLoading}>
+                <Mail size={18} />
                 {isLoading ? 'Sending OTP to Gmail...' : '📩 Send OTP Code to Gmail'}
-              </Button>
+              </button>
             </form>
           )}
 
           {otpStep === 2 && (
-            <form onSubmit={handleResetWithOtp} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-              <div style={{ background: '#f3e8ff', border: '1px solid #c084fc', padding: '10px 14px', borderRadius: '8px', fontSize: '0.88rem', color: '#6b21a8', fontWeight: 'bold' }}>
-                ✉️ OTP sent to {userEmail}. Enter the 6-digit code below:
+            <form onSubmit={handleResetWithOtp} autoComplete="off">
+              {/* Hidden inputs to prevent browser credential auto-injection */}
+              <input type="text" name="fake_username_remember" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+              <input type="password" name="fake_password_remember" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+
+              <div className={`${styles.statusAlert} ${styles.infoAlert}`}>
+                <Mail size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  OTP sent to <strong>{userEmail}</strong>. Enter the 6-digit code below:
+                </div>
               </div>
 
-              <Input
-                label="6-Digit OTP Code"
-                type="text"
-                placeholder="123456"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                required
-                maxLength={6}
-                style={{ letterSpacing: '6px', textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', border: '2px solid #a855f7' }}
-              />
-              <Input
+              <div className={styles.inputFieldWrapper}>
+                <label className={styles.inputLabel}>
+                  6-Digit OTP Code <span className={styles.requiredStar}>*</span>
+                </label>
+                <GlassOtpInput value={otp} onChange={setOtp} />
+              </div>
+
+              <GlassPasswordInput
                 label="New Password"
-                type="password"
+                name="newPassword"
                 placeholder="Enter new password (min 6 chars)"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-              <Input
-                label="Confirm New Password"
-                type="password"
-                placeholder="Re-enter new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
                 required
                 minLength={6}
               />
 
-              <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-                <Button type="button" variant="ghost" onClick={() => setOtpStep(1)} style={{ flex: 1 }}>
-                  ← Resend OTP
-                </Button>
-                <Button type="submit" variant="primary" disabled={isLoading} style={{ flex: 1 }}>
-                  {isLoading ? 'Resetting...' : '🔒 Reset Password'}
-                </Button>
+              <GlassPasswordInput
+                label="Confirm New Password"
+                name="confirmPassword"
+                placeholder="Re-enter new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+                minLength={6}
+              />
+
+              <div className={styles.btnRow}>
+                <button
+                  type="button"
+                  onClick={() => setOtpStep(1)}
+                  className={styles.glassSecondaryBtn}
+                >
+                  <ArrowLeft size={16} /> Resend OTP
+                </button>
+                <button
+                  type="submit"
+                  className={styles.glassSubmitBtn}
+                  disabled={isLoading}
+                  style={{ flex: 1.5, marginTop: 0 }}
+                >
+                  <Lock size={18} />
+                  {isLoading ? 'Resetting...' : 'Reset Password'}
+                </button>
               </div>
             </form>
           )}

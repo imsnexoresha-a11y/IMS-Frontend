@@ -161,9 +161,10 @@ export default function StudentTable({
               variant="ghost"
               size="sm"
               disabled={isUpdating}
-              onClick={() =>
-                onStatusChange?.(row)
-              }
+              onClick={(e) => {
+                e.stopPropagation();
+                onStatusChange?.(row);
+              }}
               title={
                 isActive
                   ? 'Deactivate student'
@@ -178,9 +179,10 @@ export default function StudentTable({
               variant="ghost"
               size="sm"
               disabled={isUpdating}
-              onClick={() =>
-                onMoveBatch?.(row)
-              }
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveBatch?.(row);
+              }}
               title="Move student to another batch"
             >
               <ArrowRightLeft size={14} />

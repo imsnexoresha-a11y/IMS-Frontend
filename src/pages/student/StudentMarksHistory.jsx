@@ -26,11 +26,12 @@ export default function StudentMarksHistory() {
   return (
     <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
       <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'bold' }}>Marks History</h1>
-      <Card title="Recent Grades & Points">
+      <Card title="Recent Grades & Points" className="student-block-hover">
         {entries.length === 0 ? (
           <p style={{ color: 'var(--color-text-secondary)' }}>No marks history available.</p>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(0, 0, 0, 0.08)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
                 <th style={{ padding: 'var(--space-sm)' }}>Date</th>
@@ -57,7 +58,8 @@ export default function StudentMarksHistory() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </Card>
     </div>

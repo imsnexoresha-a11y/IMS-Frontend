@@ -29,7 +29,9 @@
 .table {
   width: 100%;
   border: var(--border);
+  border-radius: var(--radius-card, 16px);
   background-color: var(--color-surface);
+  overflow: hidden;
 }
 
 .thead {

@@ -6,6 +6,7 @@
   gap: var(--space-sm);
   padding: var(--space-xl);
   border: var(--border-width) dashed var(--color-ink);
+  border-radius: var(--radius-card, 16px);
   background-color: var(--color-surface);
   cursor: pointer;
   transition: background-color var(--transition-fast), border-color var(--transition-fast);
@@ -56,6 +57,7 @@
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border: var(--border);
+  border-radius: 12px;
   background-color: var(--color-surface);
   margin-top: var(--space-sm);
 }

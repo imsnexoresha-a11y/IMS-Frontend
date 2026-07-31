@@ -99,22 +99,34 @@
   to { background-position: 0 0; }
 }
 
-/* Student Block Hover Effect */
-.student-block-hover {
-  transition: all 0.3s ease;
+/* Global Block Hover Effect across Student, Teacher, and Admin sections */
+.student-block-hover,
+.admin-block-hover,
+.teacher-block-hover,
+.block-hover {
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   border: 2px solid var(--color-neutral);
   background-color: var(--color-surface);
+  border-radius: var(--radius-card, 16px) !important;
+  overflow: hidden;
 }
 
-.student-block-hover:hover {
-  border-color: var(--color-ink) !important;
-  box-shadow: 0 0 15px rgba(255, 111, 32, 0.8), 4px 4px 0px var(--color-ink); background-color: var(--color-surface);
-  transform: translateY(-2px);
+.student-block-hover:hover,
+.admin-block-hover:hover,
+.teacher-block-hover:hover,
+.block-hover:hover {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 12px 30px -6px rgba(255, 93, 0, 0.3), 0 0 18px rgba(255, 111, 32, 0.8), 4px 4px 0px var(--color-ink) !important;
+  background-color: var(--color-surface);
+  transform: translateY(-3px) scale(1.005);
   z-index: 10;
   position: relative;
 }
 
-.student-block-hover:hover .badge-glow {
+.student-block-hover:hover .badge-glow,
+.admin-block-hover:hover .badge-glow,
+.teacher-block-hover:hover .badge-glow,
+.block-hover:hover .badge-glow {
   animation: pulse-glow 1.5s infinite;
 }
 

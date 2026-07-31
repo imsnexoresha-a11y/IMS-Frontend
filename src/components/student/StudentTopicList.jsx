@@ -25,7 +25,7 @@ export default function StudentTopicList({ topics = [] }) {
         {topics.map((topic) => {
           const isExpanded = !!expanded[topic.id || topic._id];
           return (
-            <div key={topic.id || topic._id} className="student-block-hover" style={{ border: '2px solid var(--color-ink)', backgroundColor: 'var(--color-surface)' }}>
+            <div key={topic.id || topic._id} className="student-block-hover" style={{ border: '2px solid var(--color-ink)', backgroundColor: 'var(--color-surface)', borderRadius: '16px', overflow: 'hidden' }}>
               <div
                 onClick={() => toggle(topic.id || topic._id)}
                 style={{

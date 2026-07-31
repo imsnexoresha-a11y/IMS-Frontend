@@ -41,20 +41,127 @@ export default function StudentProfile() {
     try {
       const printWindow = window.open('', '_blank');
       printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
           <head>
-            <title>Profile - ${profile?.name || 'Student'}</title>
+            <title>Student Profile - ${displayName}</title>
             <style>
-              body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 40px; }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 16px; }
-              th, td { border-bottom: 1px solid #eee; padding: 12px 8px; text-align: left; }
-              td:first-child { font-weight: bold; width: 200px; color: #555; }
-              h1 { font-size: 28px; border-bottom: 2px solid #222; padding-bottom: 10px; margin-bottom: 24px; color: #111; }
-              img { border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-              .footer { margin-top: 50px; font-size: 12px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+              * { box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                background-color: #FAF8F5;
+                color: #2E2E2E;
+                margin: 0;
+                padding: 40px;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .pdf-container {
+                width: 100%;
+                max-width: 800px;
+                margin: 0 auto;
+                background: #FAF8F5;
+              }
+              .hero-card {
+                background: #FFFFFF;
+                border: 1.5px solid #EFEBE4;
+                border-top: 4px solid #FF5D00;
+                border-radius: 16px;
+                padding: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.03);
+                margin-bottom: 24px;
+              }
+              .avatar {
+                width: 96px;
+                height: 96px;
+                border-radius: 16px;
+                object-fit: cover;
+                border: 3px solid #FF5D00;
+                box-shadow: 0 4px 14px rgba(255, 93, 0, 0.2);
+              }
+              .avatar-placeholder {
+                width: 96px;
+                height: 96px;
+                border-radius: 16px;
+                background: #FFF4EE;
+                border: 3px solid #FF5D00;
+                color: #FF5D00;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 32px;
+                font-weight: 900;
+              }
+              .badge-pill {
+                display: inline-block;
+                padding: 5px 14px;
+                border-radius: 20px;
+                background: rgba(255, 93, 0, 0.08);
+                color: #FF5D00;
+                border: 1px solid rgba(255, 93, 0, 0.3);
+                font-size: 12px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+              .section-card {
+                background: #FFFFFF;
+                border: 1.5px solid #EFEBE4;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+                margin-bottom: 24px;
+              }
+              .section-title {
+                font-size: 16px;
+                font-weight: 800;
+                color: #FF5D00;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-top: 0;
+                margin-bottom: 18px;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #FFF0E6;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+              }
+              tr:nth-child(even) {
+                background-color: #FAF8F5;
+              }
+              td {
+                padding: 14px 16px;
+                font-size: 14px;
+                border-bottom: 1px solid #F0EBE1;
+              }
+              td.label {
+                font-weight: 700;
+                color: #555;
+                width: 220px;
+              }
+              td.value {
+                font-weight: 600;
+                color: #111;
+              }
+              .watermark-footer {
+                background: #F3EEE6;
+                border: 1px solid #E6DFD5;
+                border-radius: 14px;
+                padding: 16px 24px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 12px;
+                color: #666;
+                margin-top: 30px;
+              }
               @media print {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                body { padding: 20px; background-color: #FAF8F5; }
+                .pdf-container { width: 100%; }
               }
             </style>
           </head>
@@ -66,7 +173,6 @@ export default function StudentProfile() {
       printWindow.document.close();
       printWindow.focus();
       
-      // Allow image to load before triggering print
       setTimeout(() => {
         printWindow.print();
         printWindow.close();
@@ -102,64 +208,69 @@ export default function StudentProfile() {
         </div>
       </Card>
 
-      {/* 
-        HIDDEN PDF TEMPLATE 
-        This is what html2pdf will capture, generating a clean, formal document 
-        instead of a screenshot of the UI.
-      */}
-      <div 
-        style={{ overflow: 'hidden', height: 0 }}
-      >
-        <div 
-          ref={pdfTemplateRef} 
-          style={{ 
-            padding: '40px', 
-            fontFamily: 'Helvetica, Arial, sans-serif', 
-            color: 'black', 
-            background: 'white',
-            width: '800px'
-          }}
-        >
-        <h1 style={{ fontSize: '24px', borderBottom: '2px solid black', paddingBottom: '10px', marginBottom: '20px' }}>
-          Student Profile Record
-        </h1>
-        
-        {profile?.profilePic && (
-          <img 
-            src={profile.profilePic} 
-            alt="Profile" 
-            style={{ width: '120px', height: '120px', objectFit: 'cover', border: '1px solid black', marginBottom: '20px' }} 
-          />
-        )}
-        
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px', fontSize: '16px' }}>
-          <tbody>
-            <tr>
-              <td style={{ padding: '8px 0', fontWeight: 'bold', width: '200px' }}>Full Name:</td>
-              <td style={{ padding: '8px 0' }}>{displayName}</td>
-            </tr>
-            <tr>
-              <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Email Address:</td>
-              <td style={{ padding: '8px 0' }}>{profile?.user?.email || profile?.email || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Date of Birth:</td>
-              <td style={{ padding: '8px 0' }}>{profile?.dateOfBirth || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style={{ padding: '8px 0', fontWeight: 'bold' }}>GitHub Link:</td>
-              <td style={{ padding: '8px 0' }}>{profile?.githubLink || profile?.gitHubUrl || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style={{ padding: '8px 0', fontWeight: 'bold' }}>LinkedIn Link:</td>
-              <td style={{ padding: '8px 0' }}>{profile?.linkedinLink || profile?.linkedInUrl || 'N/A'}</td>
-            </tr>
-          </tbody>
-        </table>
+      {/* HIDDEN ELEGANT LIGHT BEIGE PDF TEMPLATE */}
+      <div style={{ overflow: 'hidden', height: 0 }}>
+        <div ref={pdfTemplateRef} className="pdf-container">
+          {/* Executive Hero Banner */}
+          <div className="hero-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {profile?.profilePic ? (
+                <img src={profile.profilePic} alt="Profile" className="avatar" />
+              ) : (
+                <div className="avatar-placeholder">
+                  {displayName.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h1 style={{ fontSize: '24px', fontWeight: '900', margin: '0 0 6px 0', color: '#111' }}>{displayName}</h1>
+                <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '14px' }}>
+                  Student Email: <strong style={{ color: '#2E2E2E' }}>{profile?.user?.email || profile?.email || 'N/A'}</strong>
+                </p>
+                <div className="badge-pill">✓ Verified Academic Profile</div>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: '#FF5D00', textTransform: 'uppercase', letterSpacing: '1px' }}>IMS Institute</div>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#333', marginTop: '4px' }}>Official Student Record</div>
+            </div>
+          </div>
 
-        <div style={{ marginTop: '50px', fontSize: '12px', color: '#666', textAlign: 'center' }}>
-          Generated by IMS on {new Date().toLocaleDateString()}
-        </div>
+          {/* Profile Details Table Section */}
+          <div className="section-card">
+            <div className="section-title">Personal & Contact Details</div>
+            <table>
+              <tbody>
+                <tr>
+                  <td className="label">Full Name:</td>
+                  <td className="value">{displayName}</td>
+                </tr>
+                <tr>
+                  <td className="label">Email Address:</td>
+                  <td className="value">{profile?.user?.email || profile?.email || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td className="label">Date of Birth:</td>
+                  <td className="value">{profile?.dateOfBirth || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td className="label">GitHub Portfolio:</td>
+                  <td className="value" style={{ color: '#FF5D00' }}>{profile?.githubLink || profile?.gitHubUrl || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td className="label">LinkedIn Network:</td>
+                  <td className="value" style={{ color: '#FF5D00' }}>{profile?.linkedinLink || profile?.linkedInUrl || 'N/A'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Verification Watermark Footer */}
+          <div className="watermark-footer">
+            <div>
+              <strong>AUTHENTICATED STUDENT RECORD</strong> • Generated on {new Date().toLocaleDateString()}
+            </div>
+            <div style={{ color: '#FF5D00', fontWeight: '700' }}>IMS System Verified Stamp</div>
+          </div>
         </div>
       </div>
     </div>

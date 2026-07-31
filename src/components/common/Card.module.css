@@ -1,19 +1,30 @@
 .card {
   background-color: var(--color-surface);
   border: var(--border);
+  border-radius: var(--radius-card, 16px);
   box-shadow: var(--shadow-offset);
   padding: var(--space-lg);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-3px) scale(1.003);
+  box-shadow: 0 12px 30px -6px rgba(255, 93, 0, 0.25), 0 0 18px rgba(255, 111, 32, 0.8), var(--shadow-offset);
+  border-color: var(--color-accent);
+  z-index: 5;
+  position: relative;
 }
 
 .clickable {
   cursor: pointer;
+  border-radius: var(--radius-card, 16px);
 }
 
 .clickable:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 0 0 15px rgba(255, 111, 32, 0.8), var(--shadow-lg);
-  border-color: var(--color-ink);
+  transform: translateY(-4px) scale(1.008);
+  box-shadow: 0 14px 32px -6px rgba(255, 93, 0, 0.35), 0 0 22px rgba(255, 111, 32, 0.9), var(--shadow-lg);
+  border-color: var(--color-accent);
   z-index: 10;
   position: relative;
 }

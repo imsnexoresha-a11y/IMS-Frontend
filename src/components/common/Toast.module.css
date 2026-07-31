@@ -15,9 +15,11 @@
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
   border: var(--border);
+  border-radius: 12px;
   box-shadow: var(--shadow-offset);
   animation: slideIn 200ms ease;
   background-color: var(--color-surface);
+  overflow: hidden;
 }
 
 @keyframes slideIn {

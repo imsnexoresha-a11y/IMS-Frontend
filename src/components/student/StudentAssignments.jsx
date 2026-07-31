@@ -109,7 +109,7 @@ export default function StudentAssignments({ assignments: assignmentsProp }) {
         </Card>
       ) : (
         <>
-          <div style={{ marginBottom: 'var(--space-md)', padding: 'var(--space-sm) var(--space-md)', backgroundColor: 'var(--color-surface)', border: 'var(--border)', boxShadow: 'var(--shadow-sm)', display: 'inline-block', fontWeight: 'bold' }}>
+          <div style={{ marginBottom: 'var(--space-md)', padding: 'var(--space-sm) var(--space-md)', backgroundColor: 'var(--color-surface)', border: 'var(--border)', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', display: 'inline-block', fontWeight: 'bold' }}>
             Today's Date: <span style={{ color: 'var(--color-primary)' }}>{new Date().toLocaleDateString()}</span>
           </div>
           {assignments.map((assignment) => (

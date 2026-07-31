@@ -113,7 +113,10 @@ export default function TeacherTable({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => onEdit?.(row)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(row);
+              }}
               aria-label={`Edit ${row.name}`}
             >
               <Pencil size={14} />
@@ -124,9 +127,10 @@ export default function TeacherTable({
               variant="ghost"
               size="sm"
               disabled={isUpdating}
-              onClick={() =>
-                onStatusChange?.(row)
-              }
+              onClick={(e) => {
+                e.stopPropagation();
+                onStatusChange?.(row);
+              }}
               aria-label={
                 isActive
                   ? `Deactivate ${row.name}`

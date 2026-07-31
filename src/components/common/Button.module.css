@@ -11,6 +11,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border: var(--border);
+  border-radius: 10px;
   cursor: pointer;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   position: relative;

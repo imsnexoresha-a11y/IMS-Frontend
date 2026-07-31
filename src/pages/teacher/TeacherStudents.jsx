@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTeacherDashboard } from '../../hooks/useDashboard';
 import { useBatchStudents } from '../../hooks/useAttendance';
 import Card from '../../components/common/Card';
