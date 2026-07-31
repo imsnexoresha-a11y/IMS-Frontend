@@ -33,7 +33,7 @@ export default function StudentProfilePage() {
           </div>
           {showChangePassword && (
             <div style={{ marginTop: 'var(--space-xl)', paddingTop: 'var(--space-lg)', borderTop: '1px solid var(--border-color)' }}>
-              <ChangePasswordForm />
+              <ChangePasswordForm onSuccess={() => setShowChangePassword(false)} />
             </div>
           )}
         </div>

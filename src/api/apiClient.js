@@ -35,16 +35,18 @@ apiClient.interceptors.response.use(
         );
       }
 
-      return response.data.data;
+      const payload = typeof response.data.data === 'object' && response.data.data !== null ? response.data.data : {};
+      return {
+        message: response.data.message,
+        ...payload,
+      };
     }
 
     return response.data;
   },
   (error) => {
     const requestUrl = error.config?.url || '';
-    const isAuthRequest =
-      requestUrl.includes('/auth/login') ||
-      requestUrl.includes('/auth/refresh');
+    const isAuthRequest = requestUrl.includes('/auth/');
 
     if (
       error.response?.status === 401 &&
