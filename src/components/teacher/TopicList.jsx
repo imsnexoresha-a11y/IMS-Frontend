@@ -13,11 +13,18 @@ import { useLectures } from '../../hooks/useLectures';
 import Badge from '../common/Badge';
 import Button, { IconButton } from '../common/Button';
 import Modal from '../common/Modal';
+import ConfirmDialog from '../common/ConfirmDialog';
+import { useToast } from '../common/Toast';
 import TopicForm from './TopicForm';
 import TopicReorderList from './TopicReorderList';
 import NotesUploadList from './NotesUploadList';
 
+function getTopicId(topic) {
+  return topic?._id || topic?.id || '';
+}
+
 export default function TopicList({ batchId }) {
+  const toast = useToast();
   const resolvedBatchId = batchId || 'batch-001';
 
   // React Queries
@@ -38,6 +45,11 @@ export default function TopicList({ batchId }) {
   const [reorderOpen, setReorderOpen] = useState(false);
   const [notesTopic, setNotesTopic] = useState(null);
 
+  // Deletion Modal State
+  const [topicToDelete, setTopicToDelete] = useState(null);
+  const [blockedTopic, setBlockedTopic] = useState(null);
+  const [noteToDelete, setNoteToDelete] = useState(null);
+
   if (isLoading) {
     return <div style={{ padding: 'var(--space-lg)', textAlign: 'center' }}>Loading topics...</div>;
   }
@@ -48,58 +60,89 @@ export default function TopicList({ batchId }) {
 
   // Check if topic is linked to any session
   const isTopicLinked = (topicId) => {
-    return lectures.some(lec => lec.topicId === topicId);
+    if (!topicId) return false;
+    return lectures.some(lec => {
+      if (lec.topicId === topicId) return true;
+      if (Array.isArray(lec.topicIds) && lec.topicIds.includes(topicId)) return true;
+      return false;
+    });
   };
 
   const handleAddTopic = async (data) => {
-    await createTopicMutation.mutateAsync({
-      batchId: resolvedBatchId,
-      data
-    });
-    setIsAddOpen(false);
+    try {
+      await createTopicMutation.mutateAsync({
+        batchId: resolvedBatchId,
+        data
+      });
+      toast.success('Topic Created', 'Curriculum topic created successfully.');
+      setIsAddOpen(false);
+    } catch (err) {
+      toast.error('Creation Failed', err.message || 'Failed to create topic');
+    }
   };
 
   const handleUpdateTopic = async (data) => {
-    if (!editingTopic) return;
-    await updateTopicMutation.mutateAsync({
-      batchId: resolvedBatchId,
-      topicId: editingTopic.id,
-      data
-    });
-    setEditingTopic(null);
+    const tid = getTopicId(editingTopic);
+    if (!tid) return;
+    try {
+      await updateTopicMutation.mutateAsync({
+        batchId: resolvedBatchId,
+        topicId: tid,
+        data
+      });
+      toast.success('Topic Updated', 'Curriculum topic updated successfully.');
+      setEditingTopic(null);
+    } catch (err) {
+      toast.error('Update Failed', err.message || 'Failed to update topic');
+    }
   };
 
-  const handleDeleteTopic = async (topic) => {
-    if (isTopicLinked(topic.id)) {
-      alert(`Deletion Blocked: The topic "${topic.title}" is linked to an existing lecture/session.`);
-      return;
+  const onClickDeleteTopic = (topic) => {
+    const tid = getTopicId(topic);
+    if (isTopicLinked(tid)) {
+      setBlockedTopic(topic);
+    } else {
+      setTopicToDelete(topic);
     }
+  };
 
-    if (window.confirm(`Are you sure you want to delete "${topic.title}"?`)) {
+  const executeDeleteTopic = async () => {
+    if (!topicToDelete) return;
+    const tid = getTopicId(topicToDelete);
+    try {
       await deleteTopicMutation.mutateAsync({
         batchId: resolvedBatchId,
-        topicId: topic.id
+        topicId: tid
       });
+      toast.success('Topic Deleted', `"${topicToDelete.title}" deleted successfully.`);
+      setTopicToDelete(null);
+    } catch (err) {
+      toast.error('Delete Failed', err.message || 'Failed to delete topic');
     }
   };
 
   const handleReorder = async (orderedIds) => {
-    await reorderTopicsMutation.mutateAsync({
-      batchId: resolvedBatchId,
-      orderedIds
-    });
-    setReorderOpen(false);
+    try {
+      await reorderTopicsMutation.mutateAsync({
+        batchId: resolvedBatchId,
+        orderedIds
+      });
+      toast.success('Topics Reordered', 'Topic order updated successfully.');
+      setReorderOpen(false);
+    } catch (err) {
+      toast.error('Reorder Failed', err.message || 'Failed to reorder topics');
+    }
   };
 
   const handleUploadNotes = async (filesOrFile) => {
-    if (!notesTopic || !filesOrFile) return;
+    const tid = getTopicId(notesTopic);
+    if (!tid || !filesOrFile) return;
     const files = Array.isArray(filesOrFile) ? filesOrFile : [filesOrFile];
     if (files.length === 0) return;
 
-    // Check maximum notes limit (5 files total)
     const currentCount = notesTopic.notesCount || notesTopic.notes?.length || 0;
     if (currentCount + files.length > 5) {
-      alert(`Limit exceeded: A topic can have at most 5 notes documents. You currently have ${currentCount} and tried to upload ${files.length}.`);
+      toast.warning('Limit Exceeded', `A topic can have at most 5 notes documents. (Current: ${currentCount})`);
       return;
     }
 
@@ -111,32 +154,40 @@ export default function TopicList({ batchId }) {
     try {
       await uploadNotesMutation.mutateAsync({
         batchId: resolvedBatchId,
-        topicId: notesTopic.id,
+        topicId: tid,
         formData
       });
-      // In order to show latest updates in the modal list
-      const updated = topics.find(t => t.id === notesTopic.id);
+      toast.success('Notes Uploaded', 'Study materials uploaded successfully.');
+      const updated = topics.find(t => getTopicId(t) === tid);
       if (updated) {
         setNotesTopic(updated);
       }
     } catch (err) {
-      alert(err.message || 'Failed to upload notes');
+      toast.error('Upload Failed', err.message || 'Failed to upload notes');
     }
   };
 
-  const handleDeleteNote = async (fileId) => {
-    if (!notesTopic) return;
-    if (window.confirm('Delete notes document?')) {
+  const onClickDeleteNote = (fileId) => {
+    setNoteToDelete(fileId);
+  };
+
+  const executeDeleteNote = async () => {
+    const tid = getTopicId(notesTopic);
+    if (!tid || !noteToDelete) return;
+    try {
       await deleteNoteMutation.mutateAsync({
         batchId: resolvedBatchId,
-        topicId: notesTopic.id,
-        fileId
+        topicId: tid,
+        fileId: noteToDelete
       });
-      // In order to show latest updates in the modal list
-      const updated = topics.find(t => t.id === notesTopic.id);
+      toast.success('File Deleted', 'Notes document deleted successfully.');
+      const updated = topics.find(t => getTopicId(t) === tid);
       if (updated) {
         setNotesTopic(updated);
       }
+      setNoteToDelete(null);
+    } catch (err) {
+      toast.error('Delete Failed', err.message || 'Failed to delete note');
     }
   };
 
@@ -147,8 +198,9 @@ export default function TopicList({ batchId }) {
 
   // Compute topic completion dynamically based on linked lecture statuses
   const isTopicCompleted = (t) => {
+    const tid = getTopicId(t);
     const linkedSessions = lectures.filter(
-      (lec) => lec.topicIds?.includes(t.id) || lec.topicId === t.id
+      (lec) => lec.topicIds?.includes(tid) || lec.topicId === tid
     );
     if (linkedSessions.length === 0) return false;
     return linkedSessions.every((lec) => lec.status === 'completed');
@@ -179,10 +231,21 @@ export default function TopicList({ batchId }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
           {sortedTopics.map((topic) => {
-            const linked = isTopicLinked(topic.id);
+            const tid = getTopicId(topic);
+            const linked = isTopicLinked(tid);
             const isCompleted = isTopicCompleted(topic);
+            const linkedLecs = lectures.filter(
+              (lec) => lec.topicId === tid || (Array.isArray(lec.topicIds) && lec.topicIds.includes(tid))
+            );
+            const lectureCount = (typeof topic.lectureCount === 'number' && topic.lectureCount > 0)
+              ? topic.lectureCount
+              : linkedLecs.length;
+            const notesCount = (typeof topic.notesCount === 'number' && topic.notesCount > 0)
+              ? topic.notesCount
+              : (topic.notesFiles?.length || topic.notes?.length || 0);
+
             return (
-              <div key={topic.id}
+              <div key={tid}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 'var(--space-md)',
                   padding: 'var(--space-md) var(--space-lg)',
@@ -208,7 +271,7 @@ export default function TopicList({ batchId }) {
                     </div>
                   )}
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral)', fontWeight: 'var(--font-bold)', marginTop: '4px' }}>
-                    {topic.lectureCount || 0} lectures · {topic.notesCount || 0} notes
+                    {lectureCount} {lectureCount === 1 ? 'lecture' : 'lectures'} · {notesCount} {notesCount === 1 ? 'note' : 'notes'}
                   </div>
                 </div>
 
@@ -238,9 +301,8 @@ export default function TopicList({ batchId }) {
                     size="sm"
                     variant="danger"
                     label={linked ? "Deletion Blocked (Linked to Lecture)" : "Delete Topic"}
-                    onClick={() => handleDeleteTopic(topic)}
-                    disabled={false} // Styled differently or handled with warning alert
-                    style={linked ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                    onClick={() => onClickDeleteTopic(topic)}
+                    style={linked ? { opacity: 0.5 } : {}}
                   />
                 </div>
               </div>
@@ -280,13 +342,59 @@ export default function TopicList({ batchId }) {
         {notesTopic && (
           <NotesUploadList
             topicTitle={notesTopic.title}
-            notes={topics.find(t => t.id === notesTopic.id)?.notes || []}
+            notes={topics.find(t => getTopicId(t) === getTopicId(notesTopic))?.notes || []}
             onUpload={handleUploadNotes}
-            onDeleteNote={handleDeleteNote}
+            onDeleteNote={onClickDeleteNote}
             onClose={() => setNotesTopic(null)}
           />
         )}
       </Modal>
+
+      {/* Delete Topic Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={Boolean(topicToDelete)}
+        onClose={() => setTopicToDelete(null)}
+        onConfirm={executeDeleteTopic}
+        title="Delete Curriculum Topic"
+        message={`Are you sure you want to delete "${topicToDelete?.title}"? This action will remove the topic from the curriculum.`}
+        confirmLabel="Delete Topic"
+        variant="danger"
+        loading={deleteTopicMutation.isPending}
+      />
+
+      {/* Deletion Blocked Alert Modal */}
+      <Modal
+        isOpen={Boolean(blockedTopic)}
+        onClose={() => setBlockedTopic(null)}
+        title="Deletion Blocked"
+        size="sm"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <p style={{ color: 'var(--color-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+            The topic <strong>"{blockedTopic?.title}"</strong> cannot be deleted because it is currently linked to one or more scheduled/completed lectures.
+          </p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+            Please remove or reassign the topic from its linked lectures before deleting it.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-sm)' }}>
+            <Button variant="primary" onClick={() => setBlockedTopic(null)}>
+              Understood
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Note Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={Boolean(noteToDelete)}
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={executeDeleteNote}
+        title="Delete Document"
+        message="Are you sure you want to delete this notes document? This action cannot be undone."
+        confirmLabel="Delete File"
+        variant="danger"
+        loading={deleteNoteMutation.isPending}
+      />
     </div>
   );
 }

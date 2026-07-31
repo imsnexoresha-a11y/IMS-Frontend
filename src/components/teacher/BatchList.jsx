@@ -20,12 +20,14 @@ export default function BatchList() {
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-lg)' }}>
       {batches.map((batch) => {
         const batchId = batch._id || batch.id;
+        const studentCount = batch.studentCount ?? (Array.isArray(batch.studentIds) ? batch.studentIds.length : (Array.isArray(batch.students) ? batch.students.length : 0));
+        const lectureCount = batch.lectureCount ?? (Array.isArray(batch.sessions) ? batch.sessions.length : (Array.isArray(batch.lectures) ? batch.lectures.length : 0));
         return (
           <Card key={batchId} onClick={() => navigate(`/teacher/batches/${batchId}`)} title={batch.name}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                  {batch.studentCount ?? 0} students
+                  {studentCount} {studentCount === 1 ? 'student' : 'students'}
                 </span>
                 <Badge variant={batch.status === 'active' || batch.status === 'ongoing' ? 'success' : 'neutral'} dot>
                   {batch.status}
@@ -35,7 +37,7 @@ export default function BatchList() {
                 {formatDate(batch.startDate)} — {formatDate(batch.endDate)}
               </div>
               <div style={{ fontSize: 'var(--text-sm)' }}>
-                {batch.lectureCount ?? 0} lectures
+                {lectureCount} {lectureCount === 1 ? 'lecture' : 'lectures'}
               </div>
             </div>
           </Card>
