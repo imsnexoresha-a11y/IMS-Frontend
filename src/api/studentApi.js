@@ -42,16 +42,18 @@ export async function submitAssignment(id, data) {
 export async function getPortfolio() {
   const data = await apiClient.get('/student/portfolio').catch(() => ({}));
   const user = JSON.parse(localStorage.getItem('ims_user')) || { name: 'Student' };
+  const prof = data.profile || {};
+  const profUser = prof.user || {};
   return {
-    profile: data.profile || {
-      user: { name: user.name, email: user.email },
-      name: user.name,
-      email: user.email,
-      profilePic: user.profilePic || user.avatar || null,
-      enrollementNo: 'IMS-2026-000',
-      githubLink: 'https://github.com/',
-      linkedinLink: 'https://linkedin.com/',
-      skills: []
+    profile: {
+      user: { name: profUser.name || prof.name || user.name, email: profUser.email || prof.email || user.email },
+      name: profUser.name || prof.name || user.name,
+      email: profUser.email || prof.email || user.email,
+      profilePic: prof.profilePic || user.profilePic || user.avatar || null,
+      enrollementNo: prof.enrollementNo || prof.enrollmentNo || 'N/A',
+      githubLink: prof.gitHubUrl || prof.githubLink || 'https://github.com/',
+      linkedinLink: prof.linkedInUrl || prof.linkedinLink || 'https://linkedin.com/',
+      skills: prof.skills || []
     },
     metrics: data.metrics || {
       totalPoints: 0, rank: 0, assignmentAvgScore: 0, attendancePercentage: 0
@@ -102,10 +104,13 @@ export async function markAllNotificationsRead() {
 export async function getStudentProfile() {
   const data = await apiClient.get('/student/profile').catch(() => ({}));
   const user = JSON.parse(localStorage.getItem('ims_user')) || { name: 'Student', email: 'student@example.com' };
+  const studentUser = data.user || {};
   return {
     id: data.id || data._id || user.id,
-    name: data.name || user.name,
-    email: data.email || user.email,
+    name: studentUser.name || data.name || user.name,
+    email: studentUser.email || data.email || user.email,
+    mobileNo: studentUser.mobileNo || data.mobileNo || '',
+    enrollementNo: data.enrollementNo || data.enrollmentNo || 'N/A',
     dateOfBirth: data.dateOfBirth || data.dob || '2000-01-01',
     gitHubUrl: data.gitHubUrl || data.githubLink || '',
     linkedInUrl: data.linkedInUrl || data.linkedinLink || '',
@@ -114,11 +119,13 @@ export async function getStudentProfile() {
     skills: data.skills || [],
     bio: data.bio || '',
     profilePic: data.profilePic || null,
-    batchName: data.batchId?.name || 'Unassigned',
+    batchName: data.batchId?.name || (typeof data.batchId === 'string' ? data.batchId : 'Unassigned'),
+    batchId: data.batchId || null,
     educationQualification: data.educationQualification || '',
     gender: data.gender || '',
     instituteName: data.instituteName || '',
-    resume: data.resume || ''
+    resume: data.resume || '',
+    user: studentUser.name ? studentUser : user
   };
 }
 
