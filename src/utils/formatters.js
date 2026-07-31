@@ -105,6 +105,7 @@ export function capitalize(str) {
  */
 export function formatStatus(status) {
   if (!status) return '—';
+  if (typeof status !== 'string') return String(status);
   return status
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (l) => l.toUpperCase());

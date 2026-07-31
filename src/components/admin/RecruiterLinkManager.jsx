@@ -234,65 +234,25 @@ export default function RecruiterLinkManager({
           gap: 'var(--space-md)',
         }}
       >
-        <div
-          style={{
-            maxWidth: '420px',
-          }}
-        >
-          <Select
-            label="Select Batch"
-            name="recruiterBatchId"
-            value={selectedBatchId}
-            options={[
-              {
-                value: '',
-                label: 'Select a batch',
-              },
-              ...batchOptions,
-            ]}
-            onChange={(event) =>
-              setSelectedBatchId(
-                event.target.value
-              )
-            }
-          />
-        </div>
-
-        {linkedBatches.length === 0 ? (
+        {batches.length === 0 ? (
           <p
             style={{
-              color:
-                'var(--color-text-secondary)',
+              color: 'var(--color-text-secondary)',
             }}
           >
-            No active recruiter links have
-            been generated.
+            No batches available.
           </p>
         ) : (
-          linkedBatches.map((batch) => {
-            const batchId =
-              getBatchId(batch);
-
-            const recruiterUrl =
-              getRecruiterUrl(batch);
-
-            const createdAt =
-              getCreatedAt(batch);
-
-            const viewCount =
-              getViewCount(batch);
-
-            const isGenerating =
-              String(generatingBatchId) ===
-              String(batchId);
-
-            const isRevoking =
-              String(revokingBatchId) ===
-              String(batchId);
-
-            const isCopied =
-              String(copiedBatchId) ===
-              String(batchId);
+          batches.map((batch) => {
+            const batchId = getBatchId(batch);
+            const uuid = getRecruiterUuid(batch);
+            const recruiterUrl = getRecruiterUrl(batch);
+            const createdAt = getCreatedAt(batch);
+            const viewCount = getViewCount(batch);
+            const isGenerating = String(generatingBatchId) === String(batchId);
+            const isRevoking = String(revokingBatchId) === String(batchId);
+            const isCopied = String(copiedBatchId) === String(batchId);
+            const hasLink = Boolean(uuid);
 
             return (
               <div
@@ -301,86 +261,39 @@ export default function RecruiterLinkManager({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 'var(--space-md)',
-                  padding:
-                    'var(--space-sm) var(--space-md)',
-                  border:
-                    '2px solid var(--color-neutral)',
+                  padding: 'var(--space-sm) var(--space-md)',
+                  border: '2px solid var(--color-neutral)',
+                  backgroundColor: hasLink ? 'var(--color-surface)' : 'var(--color-bg)',
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() =>
-                    openRecruiterPage(batch)
-                  }
-                  aria-label={`Open recruiter page for ${batch.name || 'batch'
-                    }`}
-                  title="Open recruiter page"
-                  style={{
-                    border: 'none',
-                    padding: 0,
-                    margin: 0,
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    color:
-                      'var(--color-accent)',
-                  }}
-                >
+                <div style={{ display: 'flex', alignItems: 'center', color: hasLink ? 'var(--color-accent)' : 'var(--color-text-secondary)' }}>
                   <Link2 size={18} />
-                </button>
+                </div>
 
-                <div
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight:
-                        'var(--font-bold)',
-                      fontSize:
-                        'var(--text-sm)',
-                    }}
-                  >
-                    {batch.name ||
-                      batch.batchName ||
-                      'Unnamed Batch'}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 'var(--font-bold)', fontSize: 'var(--text-sm)' }}>
+                    {batch.name || batch.batchName || 'Unnamed Batch'}
                   </div>
 
-                  <div
-                    style={{
-                      fontSize:
-                        'var(--text-xs)',
-                      color:
-                        'var(--color-text-secondary)',
-                    }}
-                  >
-                    {createdAt
-                      ? `Created ${formatDate(
-                        createdAt
-                      )}`
-                      : 'Recruiter link active'}
-
-                    {' · '}
-
-                    {viewCount} views
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
+                    {hasLink ? (
+                      <>
+                        {createdAt ? `Created ${formatDate(createdAt)}` : 'Link active'} · {viewCount} views
+                      </>
+                    ) : (
+                      'No recruiter link generated yet'
+                    )}
                   </div>
 
-                  {recruiterUrl && (
+                  {hasLink && recruiterUrl && (
                     <div
                       title={recruiterUrl}
                       style={{
-                        marginTop:
-                          'var(--space-xs)',
-                        fontSize:
-                          'var(--text-xs)',
-                        color:
-                          'var(--color-accent)',
+                        marginTop: 'var(--space-xs)',
+                        fontSize: 'var(--text-xs)',
+                        color: 'var(--color-accent)',
                         overflow: 'hidden',
-                        textOverflow:
-                          'ellipsis',
+                        textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -389,80 +302,56 @@ export default function RecruiterLinkManager({
                   )}
                 </div>
 
-                <Badge
-                  variant="success"
-                  dot
-                >
-                  Active
-                </Badge>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    openRecruiterPage(batch)
-                  }
-                  disabled={
-                    isGenerating ||
-                    isRevoking ||
-                    !recruiterUrl
-                  }
-                  title="Open recruiter page"
-                  aria-label={`Open recruiter page for ${batch.name || 'batch'
-                    }`}
-                >
-                  <ExternalLink size={14} />
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    copyLink(batch)
-                  }
-                  disabled={
-                    isGenerating ||
-                    isRevoking ||
-                    !recruiterUrl
-                  }
-                  title={
-                    isCopied
-                      ? 'Copied'
-                      : 'Copy recruiter link'
-                  }
-                  aria-label={`Copy recruiter link for ${batch.name || 'batch'
-                    }`}
-                >
-                  {isCopied ? (
-                    <Check size={14} />
+                <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+                  {!hasLink ? (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => onGenerate?.(batch)}
+                      disabled={isGenerating}
+                    >
+                      <Plus size={14} />
+                      {isGenerating ? 'Generating...' : 'Generate Link'}
+                    </Button>
                   ) : (
-                    <Copy size={14} />
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => copyLink(batch)}
+                        title={isCopied ? 'Copied' : 'Copy link'}
+                      >
+                        {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                        {isCopied ? 'Copied' : 'Copy'}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openRecruiterPage(batch)}
+                        title="Open recruiter page"
+                      >
+                        <ExternalLink size={14} />
+                        View
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        onClick={() => onRevoke?.(batch)}
+                        disabled={isRevoking}
+                        title="Revoke link"
+                      >
+                        <Trash2 size={14} />
+                        {isRevoking ? 'Revoking...' : 'Revoke'}
+                      </Button>
+                    </>
                   )}
-
-                  {isCopied
-                    ? 'Copied'
-                    : 'Copy'}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    onRevoke?.(batch)
-                  }
-                  disabled={
-                    isGenerating ||
-                    isRevoking
-                  }
-                  title="Revoke recruiter link"
-                  aria-label={`Revoke recruiter link for ${batch.name || 'batch'
-                    }`}
-                >
-                  <Trash2 size={14} />
-                </Button>
+                </div>
               </div>
             );
           })

@@ -101,7 +101,7 @@ export default function StudentPortfolio() {
   if (Array.isArray(portfolioData?.recentLedger)) {
     portfolioData.recentLedger.forEach((entry) => {
       if (entry.eventType && entry.eventType !== 'assignment_submission') {
-        const formattedType = entry.eventType.replace(/_/g, ' ').toUpperCase();
+        const formattedType = typeof entry.eventType === 'string' ? entry.eventType.replace(/_/g, ' ').toUpperCase() : 'ACTIVITY';
         academicSummaryItems.push({
           title: entry.description || formattedType,
           type: formattedType,

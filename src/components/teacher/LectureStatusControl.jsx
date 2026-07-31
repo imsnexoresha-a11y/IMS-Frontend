@@ -45,7 +45,7 @@ export default function LectureStatusControl({ status, lectureDate, endTime, onS
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
         <Badge variant={STATUS_VARIANTS[status] || 'neutral'} dot>
-          {status?.replace('_', ' ')}
+          {typeof status === 'string' ? status.replace(/_/g, ' ') : (status || 'scheduled')}
         </Badge>
         {transitions.map((t) => {
           const isDisabled = t.to === 'completed' && isBeforeEnd;

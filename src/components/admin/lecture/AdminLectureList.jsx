@@ -167,7 +167,7 @@ export default function AdminLectureList({
                     variant={STATUS_VARIANTS[value] || 'neutral'}
                     dot
                 >
-                    {value?.replace('_', ' ')}
+                    {typeof value === 'string' ? value.replace(/_/g, ' ') : (value || 'scheduled')}
                 </Badge>
             ),
         },

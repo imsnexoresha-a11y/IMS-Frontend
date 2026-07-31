@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     CheckCircle,
     Code2,
@@ -12,33 +12,44 @@ import DataTable from '../../common/DataTable';
 import Modal from '../../common/Modal';
 import Textarea from '../../common/Textarea';
 import Input from '../../common/Input';
-import { mockAssignments, mockStudents } from '../../../api/mockData';
-
-const INITIAL_REVIEWS = mockAssignments
-    .filter((assignment) => assignment.githubUrl)
-    .map((assignment, index) => ({
-        id: `review-${assignment.id}`,
-        assignmentId: assignment.id,
-        assignmentTitle: assignment.title,
-        studentId: mockStudents[index % mockStudents.length]?.id,
-        studentName:
-            mockStudents[index % mockStudents.length]?.name ||
-            'Student',
-        repositoryUrl: assignment.githubUrl,
-        status:
-            assignment.status === 'reviewed'
-                ? 'completed'
-                : 'queued',
-        automatedScore: assignment.score,
-        finalScore: assignment.score,
-        feedback: assignment.feedback || '',
-    }));
+import apiClient from '../../../api/apiClient';
 
 export default function AdminCodeReviewPanel({ batchId }) {
-    const [reviews, setReviews] = useState(INITIAL_REVIEWS);
+    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedReview, setSelectedReview] = useState(null);
     const [manualScore, setManualScore] = useState('');
     const [manualFeedback, setManualFeedback] = useState('');
+
+    const loadReviews = async () => {
+        try {
+            const data = await apiClient.get('/student/assignments').catch(() => []);
+            const assignments = Array.isArray(data) ? data : (data.assignments || []);
+            const mapped = assignments
+                .filter(a => a.prompt || a.instructions || a.title)
+                .map((a) => ({
+                    id: a.id || a._id,
+                    assignmentId: a.id || a._id,
+                    assignmentTitle: a.title,
+                    studentId: '—',
+                    studentName: 'Student Submission',
+                    repositoryUrl: a.gitSubmissionLink || a.githubRepoSeed || 'https://github.com/',
+                    status: a.reviewStatus || 'queued',
+                    automatedScore: a.score || 0,
+                    finalScore: a.score || 0,
+                    feedback: a.feedback || '',
+                }));
+            setReviews(mapped);
+        } catch {
+            setReviews([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadReviews();
+    }, [batchId]);
 
     const visibleReviews = useMemo(
         () => reviews,

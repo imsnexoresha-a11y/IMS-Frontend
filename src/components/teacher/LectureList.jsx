@@ -145,7 +145,7 @@ export default function LectureList({ batchId }) {
       render: (v, row) => (
         <span onClick={() => setStatusLecture(row)} style={{ cursor: 'pointer' }}>
           <Badge variant={STATUS_VARIANTS[v] || 'neutral'} dot>
-            {v.replace('_', ' ')}
+            {typeof v === 'string' ? v.replace(/_/g, ' ') : (v || 'scheduled')}
           </Badge>
         </span>
       )

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     CheckCircle,
     ClipboardCheck,
@@ -18,6 +18,8 @@ import Modal from '../../common/Modal';
 import Select from '../../common/Select';
 import Textarea from '../../common/Textarea';
 import ConfirmDialog from '../../common/ConfirmDialog';
+import apiClient from '../../../api/apiClient';
+import { QuizCSVUpload } from '../../teacher/QuizUpload';
 
 import { CSV_ACCEPT } from '../../../utils/constants';
 import { downloadCSVTemplate } from '../../../utils/downloadTemplate';
@@ -203,31 +205,37 @@ export default function AdminQuizPanel({
     topics = [],
     lectures = [],
 }) {
-    const [quizzes, setQuizzes] = useState([
-        {
-            id: 'quiz-001',
-            batchId: 'batch-001',
-            topicId: 'topic-001',
-            lectureId: 'lec-001',
-            title: 'HTML Basics',
-            source: 'google_forms',
-            externalUrl: 'https://forms.google.com',
-            maxScore: 100,
-            status: 'published',
-            resultCount: mockQuizResults.length,
-        },
-    ]);
-
+    const [quizzes, setQuizzes] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [createOpen, setCreateOpen] = useState(false);
     const [quizToDelete, setQuizToDelete] = useState(null);
     const [resultsQuiz, setResultsQuiz] = useState(null);
-    const [uploadMessage, setUploadMessage] = useState('');
-    const [templateMessage, setTemplateMessage] = useState('');
+
+    const loadQuizzes = async () => {
+        try {
+            const data = await apiClient.get('/quizzes').catch(() => []);
+            const list = Array.isArray(data) ? data : (data.quizzes || []);
+            setQuizzes(list.map(q => ({
+                ...q,
+                id: q._id || q.id,
+                maxScore: q.maxScore || 100,
+                status: q.status || 'published',
+            })));
+        } catch {
+            setQuizzes([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadQuizzes();
+    }, [batchId]);
 
     const visibleQuizzes = useMemo(
         () =>
             quizzes.filter(
-                (quiz) => !batchId || quiz.batchId === batchId
+                (quiz) => !batchId || quiz.batchId === batchId || String(quiz.batchId?._id || quiz.batchId) === String(batchId)
             ),
         [quizzes, batchId]
     );
@@ -236,33 +244,30 @@ export default function AdminQuizPanel({
         topics.map((topic) => [topic.id, topic.title])
     );
 
-    const handleCreateQuiz = (data) => {
-        setQuizzes((currentQuizzes) => [
-            ...currentQuizzes,
-            {
-                id: `quiz-${Date.now()}`,
-                batchId,
+    const handleCreateQuiz = async (data) => {
+        try {
+            const payload = {
                 ...data,
-                maxScore: Number(data.maxScore),
-                status: 'published',
-                resultCount: 0,
-            },
-        ]);
-
-        setCreateOpen(false);
+                batchId,
+                maxScore: Number(data.maxScore || 100),
+            };
+            const created = await apiClient.post('/quizzes', payload);
+            setQuizzes((current) => [created.data || created, ...current]);
+            setCreateOpen(false);
+            loadQuizzes();
+        } catch (err) {
+            alert(err.message || 'Failed to create quiz');
+        }
     };
 
-    const handleDelete = () => {
-        if (!quizToDelete) {
-            return;
+    const handleDelete = async () => {
+        if (!quizToDelete) return;
+        try {
+            await apiClient.delete(`/quizzes/${quizToDelete.id || quizToDelete._id}`);
+            setQuizzes((current) => current.filter((q) => (q.id || q._id) !== (quizToDelete.id || quizToDelete._id)));
+        } catch {
+            // ignore
         }
-
-        setQuizzes((currentQuizzes) =>
-            currentQuizzes.filter(
-                (quiz) => quiz.id !== quizToDelete.id
-            )
-        );
-
         setQuizToDelete(null);
     };
 
@@ -309,7 +314,7 @@ export default function AdminQuizPanel({
             label: 'Platform',
             render: (value) => (
                 <Badge variant="info">
-                    {value.replace('_', ' ')}
+                    {typeof value === 'string' ? value.replace(/_/g, ' ') : (value || 'quiz')}
                 </Badge>
             ),
         },
@@ -445,6 +450,13 @@ export default function AdminQuizPanel({
                     data={visibleQuizzes}
                     searchPlaceholder="Search quizzes..."
                 />
+
+                <div style={{ marginTop: 'var(--space-xl)', paddingTop: 'var(--space-lg)', borderTop: '2px solid var(--border-color)' }}>
+                    <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-md)' }}>
+                        Upload & Import Quiz Scores
+                    </h3>
+                    <QuizCSVUpload batchId={batchId} />
+                </div>
             </div>
 
             <Modal

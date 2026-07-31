@@ -132,7 +132,7 @@ export default function NotificationDropdown({ onClose }) {
               >
                 <div className={styles.notifContent}>
                   <div className={styles.notifTitle} style={{ fontWeight: isUnread ? 'var(--font-black)' : 'var(--font-semibold)' }}>
-                    {notif.title || notif.type?.replace(/_/g, ' ').toUpperCase() || 'NOTIFICATION'}
+                    {notif.title || (typeof notif.type === 'string' ? notif.type.replace(/_/g, ' ').toUpperCase() : 'NOTIFICATION')}
                   </div>
                   <div className={styles.notifMessage}>{notif.message}</div>
                   

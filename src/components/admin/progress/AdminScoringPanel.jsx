@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Award,
     Calculator,
@@ -15,6 +15,7 @@ import Input from '../../common/Input';
 import Modal from '../../common/Modal';
 import StatCard from '../../common/StatCard';
 import Timeline from '../../common/Timeline';
+import { getStudents } from '../../../api/adminApi';
 
 import {
     mockMarksHistory,
@@ -426,46 +427,40 @@ function StudentScoreDetails({ student, breakdown }) {
         </div>
     );
 }
-
 export default function AdminScoringPanel({
     batchId,
 }) {
     const [search, setSearch] = useState('');
-    const [selectedStudent, setSelectedStudent] =
-        useState(null);
-    const [recalculatedAt, setRecalculatedAt] =
-        useState(null);
+    const [realStudents, setRealStudents] = useState([]);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [recalculatedAt, setRecalculatedAt] = useState(null);
+
+    useEffect(() => {
+        getStudents(batchId ? { batchId } : {}).then((list) => {
+            if (Array.isArray(list)) {
+                setRealStudents(list);
+            }
+        }).catch(() => setRealStudents([]));
+    }, [batchId]);
 
     const students = useMemo(() => {
-        return mockStudents
-            .filter(
-                (student) =>
-                    !batchId ||
-                    student.batchId === batchId ||
-                    student.batchName
-            )
+        return realStudents
             .map((student) => {
                 const breakdown = getBreakdown(student.id);
-                const total = calculateTotal(breakdown);
-                const performance =
-                    getPerformanceStatus(total);
+                const total = student.totalPoints || calculateTotal(breakdown);
+                const performance = getPerformanceStatus(total);
 
                 return {
                     ...student,
                     baseScore: BASE_SCORE,
-                    attendancePoints:
-                        breakdown.attendance,
+                    attendancePoints: breakdown.attendance,
                     quizPoints: breakdown.quiz,
-                    assignmentPoints:
-                        breakdown.assignment,
-                    codeReviewPoints:
-                        breakdown.codeReview,
+                    assignmentPoints: breakdown.assignment,
+                    codeReviewPoints: breakdown.codeReview,
                     bonusPoints: breakdown.bonus,
                     calculatedTotal: total,
-                    performanceLabel:
-                        performance.label,
-                    performanceVariant:
-                        performance.variant,
+                    performanceLabel: performance.label,
+                    performanceVariant: performance.variant,
                 };
             })
             .filter((student) => {

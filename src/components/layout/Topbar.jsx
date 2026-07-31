@@ -54,7 +54,7 @@ function getAvatarUrl(avatar) {
     ''
   );
 
-  return `${serverBaseUrl}/${avatar.replace(/^\/+/, '')}`;
+  return avatar && typeof avatar === 'string' ? `${serverBaseUrl}/${avatar.replace(/^\/+/, '')}` : '';
 }
 
 export default function Topbar({ title }) {

@@ -6,7 +6,9 @@ import { downloadNoteFile } from '../../utils/fileDownloader';
 
 function getCleanFileName(url) {
   if (!url) return 'Document';
-  let name = decodeURIComponent(url.substring(url.lastIndexOf('/') + 1));
+  const urlStr = typeof url === 'string' ? url : (url.url || url.path || url.filename || url.name || '');
+  if (!urlStr || typeof urlStr !== 'string') return 'Document';
+  let name = decodeURIComponent(urlStr.substring(urlStr.lastIndexOf('/') + 1));
   name = name.replace(/^(\d+[-_]|notes-[-_\d]+)/i, '');
   return name || 'Document';
 }
