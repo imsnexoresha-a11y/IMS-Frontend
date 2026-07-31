@@ -9,6 +9,7 @@ import {
 import DataTable from '../common/DataTable';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
+import Select from '../common/Select';
 import { exportToCsv } from '../../utils/exportCsv';
 
 function getStudentId(student) {
@@ -37,6 +38,8 @@ function getBatchName(value, batches) {
 export default function StudentTable({
   students = [],
   batches = [],
+  selectedBatchFilter = '',
+  onBatchFilterChange,
   onAdd,
   onBulkUpload,
   onRowClick,
@@ -315,8 +318,24 @@ export default function StudentTable({
           style={{
             display: 'flex',
             gap: 'var(--space-xs)',
+            alignItems: 'center',
+            flexWrap: 'wrap',
           }}
         >
+          <div style={{ minWidth: '180px' }}>
+            <Select
+              value={selectedBatchFilter}
+              onChange={(e) => onBatchFilterChange?.(e.target.value)}
+              options={[
+                { value: '', label: 'All Batches' },
+                ...batches.map((b) => ({
+                  value: b._id || b.id,
+                  label: b.name || b.batchName || 'Unnamed Batch',
+                })),
+              ]}
+            />
+          </div>
+
           <Button
             type="button"
             variant="ghost"

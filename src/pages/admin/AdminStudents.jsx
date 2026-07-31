@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import {
@@ -45,6 +45,7 @@ function getStudentStatus(student) {
 }
 
 export default function AdminStudents() {
+  const [selectedBatchFilter, setSelectedBatchFilter] = useState('');
   const [bulkModalOpen, setBulkModalOpen] =
     useState(false);
 
@@ -79,6 +80,19 @@ export default function AdminStudents() {
     error,
     refetch,
   } = useStudents();
+
+  const filteredStudents = useMemo(() => {
+    if (!selectedBatchFilter) {
+      return students;
+    }
+    return students.filter((student) => {
+      const batchId =
+        typeof student.batchId === 'object'
+          ? student.batchId?._id || student.batchId?.id
+          : student.batchId;
+      return String(batchId) === String(selectedBatchFilter);
+    });
+  }, [students, selectedBatchFilter]);
 
   const {
     data: batches = [],
@@ -379,8 +393,10 @@ export default function AdminStudents() {
         )}
 
         <StudentTable
-          students={students}
+          students={filteredStudents}
           batches={batches}
+          selectedBatchFilter={selectedBatchFilter}
+          onBatchFilterChange={setSelectedBatchFilter}
           onAdd={() =>
             setAddModalOpen(true)
           }
