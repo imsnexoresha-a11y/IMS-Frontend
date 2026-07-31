@@ -1,6 +1,6 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 
-import Select from '../common/Select';
+import SearchableSelect from '../common/SearchableSelect';
 import Input from '../common/Input';
 import Textarea from '../common/Textarea';
 import Button from '../common/Button';
@@ -23,16 +23,14 @@ export default function MarkOverrideForm({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm();
 
-  const studentOptions = students.map(
-    (student) => ({
-      value: student._id || student.id,
-      label: `${getStudentName(student)} — ${student.enrollementNo || 'No enrollment number'
-        }`,
-    })
-  );
+  const studentOptions = students.map((student) => ({
+    value: student._id || student.id,
+    label: `${getStudentName(student)} — ${student.enrollementNo || student.enrollmentNo || 'No ID'}`,
+  }));
 
   const submitForm = async (data) => {
     await onSubmit?.({
@@ -51,13 +49,22 @@ export default function MarkOverrideForm({
         gap: 'var(--space-md)',
       }}
     >
-      <Select
-        label="Student"
-        options={studentOptions}
-        error={errors.studentId?.message}
-        {...register('studentId', {
-          required: 'Student is required',
-        })}
+      <Controller
+        name="studentId"
+        control={control}
+        rules={{ required: 'Student is required' }}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Student"
+            placeholder="Search and select student..."
+            searchPlaceholder="Type student name or ID..."
+            options={studentOptions}
+            value={field.value || ''}
+            onChange={field.onChange}
+            error={errors.studentId?.message}
+            required
+          />
+        )}
       />
 
       <Input

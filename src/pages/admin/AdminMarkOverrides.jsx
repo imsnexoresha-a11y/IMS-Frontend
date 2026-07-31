@@ -343,6 +343,7 @@ export default function AdminMarkOverrides() {
                 size="md"
             >
                 <EventCorrectionForm
+                    students={students}
                     loading={
                         correctionMutation.isPending
                     }

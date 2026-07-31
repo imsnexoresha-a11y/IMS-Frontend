@@ -1,6 +1,8 @@
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import apiClient from '../../api/apiClient';
 
-import Select from '../common/Select';
+import SearchableSelect from '../common/SearchableSelect';
 import Input from '../common/Input';
 import Textarea from '../common/Textarea';
 import Button from '../common/Button';
@@ -23,23 +25,69 @@ export default function ManualScoreEntryForm({
   const {
     register,
     handleSubmit,
+    control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm();
 
-  const studentOptions = students.map(
-    (student) => ({
-      value: student._id || student.id,
-      label: getStudentName(student),
-    })
-  );
+  const selectedStudentId = watch('studentId');
+
+  const [submissions, setSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+
+  // Fetch submissions dynamically when student is selected
+  useEffect(() => {
+    if (!selectedStudentId) {
+      setSubmissions([]);
+      setValue('submissionId', '');
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingSubmissions(true);
+    setSubmissions([]);
+    setValue('submissionId', '');
+
+    apiClient
+      .get(`/assignment-submissions/student/${selectedStudentId}`)
+      .then((res) => {
+        if (!isMounted) return;
+        const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+        setSubmissions(list);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch student submissions:', err);
+        if (isMounted) setSubmissions([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingSubmissions(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedStudentId, setValue]);
+
+  const studentOptions = students.map((student) => ({
+    value: student._id || student.id,
+    label: `${getStudentName(student)} — ${student.enrollementNo || student.enrollmentNo || 'No ID'}`,
+  }));
+
+  const submissionOptions = submissions.map((sub) => {
+    const title = sub.assignmentId?.title || 'Assignment Submission';
+    const dateStr = sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString() : '';
+    return {
+      value: sub._id || sub.id,
+      label: `${title} ${dateStr ? `(Submitted: ${dateStr})` : ''}`,
+    };
+  });
 
   const submitForm = async (data) => {
     await onSubmit?.({
       studentId: data.studentId,
-      submissionId:
-        data.submissionId.trim(),
-      manualScore:
-        Number(data.manualScore),
+      submissionId: data.submissionId.trim(),
+      manualScore: Number(data.manualScore),
       reason: data.reason.trim(),
     });
   };
@@ -53,23 +101,49 @@ export default function ManualScoreEntryForm({
         gap: 'var(--space-md)',
       }}
     >
-      <Select
-        label="Student"
-        options={studentOptions}
-        error={errors.studentId?.message}
-        {...register('studentId', {
-          required: 'Student is required',
-        })}
+      <Controller
+        name="studentId"
+        control={control}
+        rules={{ required: 'Student is required' }}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Student"
+            placeholder="Search and select student..."
+            searchPlaceholder="Type student name or enrollment ID..."
+            options={studentOptions}
+            value={field.value || ''}
+            onChange={field.onChange}
+            error={errors.studentId?.message}
+            required
+          />
+        )}
       />
 
-      <Input
-        label="Submission ID"
-        placeholder="Assignment submission ID"
-        error={errors.submissionId?.message}
-        {...register('submissionId', {
-          required:
-            'Submission ID is required',
-        })}
+      <Controller
+        name="submissionId"
+        control={control}
+        rules={{ required: 'Submission is required' }}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Assignment Submission"
+            placeholder={
+              !selectedStudentId
+                ? 'Select a student first...'
+                : loadingSubmissions
+                ? 'Loading student submissions...'
+                : submissions.length === 0
+                ? 'No submissions found for this student'
+                : 'Search and select assignment submission...'
+            }
+            searchPlaceholder="Type assignment title..."
+            options={submissionOptions}
+            value={field.value || ''}
+            onChange={field.onChange}
+            disabled={!selectedStudentId || loadingSubmissions || submissions.length === 0}
+            error={errors.submissionId?.message}
+            required
+          />
+        )}
       />
 
       <Input
@@ -80,18 +154,15 @@ export default function ManualScoreEntryForm({
         step="0.1"
         error={errors.manualScore?.message}
         {...register('manualScore', {
-          required:
-            'Manual score is required',
+          required: 'Manual score is required',
           valueAsNumber: true,
           min: {
             value: 0,
-            message:
-              'Score cannot be below 0',
+            message: 'Score cannot be below 0',
           },
           max: {
             value: 10,
-            message:
-              'Score cannot exceed 10',
+            message: 'Score cannot exceed 10',
           },
         })}
       />
@@ -105,8 +176,7 @@ export default function ManualScoreEntryForm({
           required: 'Reason is required',
           minLength: {
             value: 20,
-            message:
-              'Reason must contain at least 20 characters',
+            message: 'Reason must contain at least 20 characters',
           },
         })}
       />
@@ -132,9 +202,7 @@ export default function ManualScoreEntryForm({
           variant="primary"
           disabled={loading}
         >
-          {loading
-            ? 'Saving...'
-            : 'Enter Score'}
+          {loading ? 'Saving...' : 'Enter Score'}
         </Button>
       </div>
     </form>
