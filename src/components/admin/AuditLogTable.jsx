@@ -15,8 +15,10 @@ export default function AuditLogTable({
     {
       key: 'createdAt',
       label: 'Time',
-      render: (value) =>
-        value ? formatDateTime(value) : '—',
+      render: (value, row) => {
+        const dateVal = value || row.createdAt || row.timestamp;
+        return dateVal ? formatDateTime(dateVal) : 'No Time';
+      },
     },
     {
       key: 'actionType',
@@ -32,18 +34,26 @@ export default function AuditLogTable({
     },
     {
       key: 'entityType',
-      label: 'Entity',
-      render: (value) => value || '—',
+      label: 'Target Entity',
+      render: (value, row) => (
+        <div>
+          <strong style={{ textTransform: 'capitalize' }}>{value || '—'}</strong>
+          {row.entityName && row.entityName !== value && row.entityName !== '—' && (
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
+              {row.entityName}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
-      key: 'entityId',
-      label: 'Entity ID',
-      render: (value) => value || '—',
-    },
-    {
-      key: 'adminId',
-      label: 'Admin ID',
-      render: (value) => value || 'System',
+      key: 'adminName',
+      label: 'Performed By',
+      render: (value, row) => (
+        <div>
+          <strong>{value || row.adminId || 'Admin'}</strong>
+        </div>
+      ),
     },
     {
       key: 'reason',

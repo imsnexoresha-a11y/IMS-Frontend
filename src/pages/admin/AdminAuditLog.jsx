@@ -128,7 +128,7 @@ export default function AdminAuditLog() {
       to: '',
       actionType: '',
       page: 1,
-      limit: 20,
+      limit: 100,
     });
 
   const {
@@ -169,7 +169,7 @@ export default function AdminAuditLog() {
       to: '',
       actionType: '',
       page: 1,
-      limit: 20,
+      limit: 100,
     });
   };
 
@@ -342,82 +342,6 @@ export default function AdminAuditLog() {
           exportMutation.isPending
         }
       />
-
-      <div
-        style={{
-          display: 'flex',
-          justifyContent:
-            'space-between',
-          alignItems: 'center',
-          gap: 'var(--space-md)',
-        }}
-      >
-        <span>
-          Page{' '}
-          {pagination.page || 1} of{' '}
-          {pagination.totalPages ||
-            1}
-          {' · '}
-          {pagination.total || 0}{' '}
-          total records
-        </span>
-
-        <div
-          style={{
-            display: 'flex',
-            gap:
-              'var(--space-sm)',
-          }}
-        >
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={
-              (pagination.page ||
-                1) <= 1 ||
-              isFetching
-            }
-            onClick={() =>
-              setFilters(
-                (current) => ({
-                  ...current,
-
-                  page: Math.max(
-                    current.page - 1,
-                    1
-                  ),
-                })
-              )
-            }
-          >
-            Previous
-          </Button>
-
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={
-              (pagination.page ||
-                1) >=
-              (pagination.totalPages ||
-                1) ||
-              isFetching
-            }
-            onClick={() =>
-              setFilters(
-                (current) => ({
-                  ...current,
-
-                  page:
-                    current.page + 1,
-                })
-              )
-            }
-          >
-            Next
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
