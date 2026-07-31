@@ -35,11 +35,9 @@ apiClient.interceptors.response.use(
         );
       }
 
-      const payload = typeof response.data.data === 'object' && response.data.data !== null ? response.data.data : {};
-      return {
-        message: response.data.message,
-        ...payload,
-      };
+      if (typeof response.data.data !== 'undefined') {
+        return response.data.data;
+      }
     }
 
     return response.data;
