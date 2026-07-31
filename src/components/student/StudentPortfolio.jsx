@@ -82,6 +82,49 @@ export default function StudentPortfolio() {
   const displayName = profile?.user?.name || profile?.name || 'Student';
   const profilePic = profile?.profilePic || null;
 
+  // Build real academic summary items dynamically from evaluated assignments and ledger metrics
+  const academicSummaryItems = [];
+
+  if (Array.isArray(assignments)) {
+    assignments.forEach((item) => {
+      if (item.result) {
+        academicSummaryItems.push({
+          title: item.assignment?.title || 'Assignment Submission',
+          type: 'Assignment',
+          score: `${item.result.percentage || item.result.marksObtained || 0}% Score (${item.result.totalPoints || 0} XP)`,
+          isSuccess: true,
+        });
+      }
+    });
+  }
+
+  if (Array.isArray(portfolioData?.recentLedger)) {
+    portfolioData.recentLedger.forEach((entry) => {
+      if (entry.eventType && entry.eventType !== 'assignment_submission') {
+        const formattedType = entry.eventType.replace(/_/g, ' ').toUpperCase();
+        academicSummaryItems.push({
+          title: entry.description || formattedType,
+          type: formattedType,
+          score: `+${entry.points || 0} XP`,
+          isSuccess: (entry.points || 0) > 0,
+        });
+      }
+    });
+  }
+
+  if (Array.isArray(portfolioData?.quizzes)) {
+    portfolioData.quizzes.forEach((quiz) => {
+      academicSummaryItems.push({
+        title: quiz.title || 'Quiz Assessment',
+        type: 'Quiz',
+        score: `${quiz.score || 0}% Score`,
+        isSuccess: (quiz.score || 0) >= 50,
+      });
+    });
+  }
+
+  const isTopRanked = metrics.rank && metrics.rank > 0 && metrics.rank <= 3;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
       {/* Action Bar */}
@@ -132,11 +175,14 @@ export default function StudentPortfolio() {
             
             <div style={{ 
               textAlign: 'center', padding: 'var(--space-sm) var(--space-lg)', 
-              border: 'var(--border)', backgroundColor: 'var(--color-warning-bg)',
+              border: 'var(--border)',
+              backgroundColor: isTopRanked ? 'var(--color-warning-bg)' : 'var(--color-surface)',
               boxShadow: 'var(--shadow-sm)'
             }}>
-              <div style={{ fontSize: '1.5rem' }}>🏆</div>
-              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--font-bold)', color: 'var(--color-ink)', textTransform: 'uppercase' }}>Top Performer</div>
+              <div style={{ fontSize: '1.5rem' }}>{isTopRanked ? '🏆' : '🎓'}</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--font-bold)', color: 'var(--color-ink)', textTransform: 'uppercase' }}>
+                {isTopRanked ? `Rank #${metrics.rank} Performer` : 'Active Intern'}
+              </div>
             </div>
           </div>
         </Card>
@@ -144,7 +190,7 @@ export default function StudentPortfolio() {
         {/* Metrics Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-lg)' }}>
           <MetricCard label="Total Points" value={`${metrics.totalPoints || 0} XP`} icon="✨" />
-          <MetricCard label="Batch Rank" value={`#${metrics.rank || '--'}`} icon="🏅" />
+          <MetricCard label="Batch Rank" value={metrics.rank ? `#${metrics.rank}` : '--'} icon="🏅" />
           <MetricCard label="Assignment Avg" value={`${metrics.assignmentAvgScore || 0}%`} icon="📝" />
           <MetricCard label="Attendance" value={`${metrics.attendancePercentage || 0}%`} icon="📅" />
         </div>
@@ -216,40 +262,34 @@ export default function StudentPortfolio() {
           )}
         </Card>
 
-        {/* Academic Summary (Lectures & Quizzes) */}
+        {/* Academic Summary (Lectures & Quizzes & Evaluations) */}
         <Card title="Academic Summary" className="student-block-hover">
           <div style={{ padding: 'var(--space-md)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--color-text-secondary)' }}>
-                  <th style={{ padding: 'var(--space-sm)' }}>Module / Topic</th>
-                  <th style={{ padding: 'var(--space-sm)' }}>Type</th>
-                  <th style={{ padding: 'var(--space-sm)' }}>Completion / Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid var(--color-neutral)' }}>
-                  <td style={{ padding: 'var(--space-sm)', fontWeight: 'bold' }}>React Fundamentals</td>
-                  <td style={{ padding: 'var(--space-sm)' }}>Quiz</td>
-                  <td style={{ padding: 'var(--space-sm)', color: 'var(--color-success)', fontWeight: 'bold' }}>90% Score</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--color-neutral)' }}>
-                  <td style={{ padding: 'var(--space-sm)', fontWeight: 'bold' }}>Advanced State Management</td>
-                  <td style={{ padding: 'var(--space-sm)' }}>Quiz</td>
-                  <td style={{ padding: 'var(--space-sm)', color: 'var(--color-success)', fontWeight: 'bold' }}>85% Score</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--color-neutral)' }}>
-                  <td style={{ padding: 'var(--space-sm)', fontWeight: 'bold' }}>Modern CSS & Styling</td>
-                  <td style={{ padding: 'var(--space-sm)' }}>Lecture Series</td>
-                  <td style={{ padding: 'var(--space-sm)' }}>100% Attended</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--color-neutral)' }}>
-                  <td style={{ padding: 'var(--space-sm)', fontWeight: 'bold' }}>Backend API Integration</td>
-                  <td style={{ padding: 'var(--space-sm)' }}>Lecture Series</td>
-                  <td style={{ padding: 'var(--space-sm)' }}>80% Attended</td>
-                </tr>
-              </tbody>
-            </table>
+            {academicSummaryItems.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 'var(--space-lg)', color: 'var(--color-text-secondary)' }}>
+                <p style={{ fontWeight: 'var(--font-bold)', fontSize: 'var(--text-md)', margin: '0 0 4px 0' }}>No Academic Records Available</p>
+                <p style={{ fontSize: 'var(--text-sm)', margin: 0 }}>Quiz scores, module completion, and assignment evaluations will automatically appear here as coursework is completed.</p>
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--color-text-secondary)' }}>
+                    <th style={{ padding: 'var(--space-sm)' }}>Module / Topic</th>
+                    <th style={{ padding: 'var(--space-sm)' }}>Type</th>
+                    <th style={{ padding: 'var(--space-sm)' }}>Completion / Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {academicSummaryItems.map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--color-neutral)' }}>
+                      <td style={{ padding: 'var(--space-sm)', fontWeight: 'bold' }}>{item.title}</td>
+                      <td style={{ padding: 'var(--space-sm)' }}>{item.type}</td>
+                      <td style={{ padding: 'var(--space-sm)', color: item.isSuccess ? 'var(--color-success)' : 'var(--color-ink)', fontWeight: 'bold' }}>{item.score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </Card>
       </div>
@@ -291,7 +331,7 @@ export default function StudentPortfolio() {
               <td style={{ backgroundColor: '#fafafa', fontWeight: '600' }}>Total Points</td>
               <td>{metrics.totalPoints || 0} XP</td>
               <td style={{ backgroundColor: '#fafafa', fontWeight: '600' }}>Batch Rank</td>
-              <td>#{metrics.rank || '--'}</td>
+              <td>{metrics.rank ? `#${metrics.rank}` : '--'}</td>
             </tr>
             <tr>
               <td style={{ backgroundColor: '#fafafa', fontWeight: '600' }}>Assignment Avg</td>
@@ -353,26 +393,18 @@ export default function StudentPortfolio() {
             </tr>
           </thead>
           <tbody>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <td style={{ padding: '12px' }}>React Fundamentals</td>
-              <td style={{ padding: '12px' }}>Quiz</td>
-              <td style={{ padding: '12px' }}>90% Score</td>
-            </tr>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <td style={{ padding: '12px' }}>Advanced State Management</td>
-              <td style={{ padding: '12px' }}>Quiz</td>
-              <td style={{ padding: '12px' }}>85% Score</td>
-            </tr>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <td style={{ padding: '12px' }}>Modern CSS & Styling</td>
-              <td style={{ padding: '12px' }}>Lecture Series</td>
-              <td style={{ padding: '12px' }}>100% Attended</td>
-            </tr>
-            <tr style={{ borderBottom: '1px solid #ccc' }}>
-              <td style={{ padding: '12px' }}>Backend API Integration</td>
-              <td style={{ padding: '12px' }}>Lecture Series</td>
-              <td style={{ padding: '12px' }}>80% Attended</td>
-            </tr>
+            {academicSummaryItems.map((item, idx) => (
+              <tr key={idx} style={{ borderBottom: '1px solid #ccc' }}>
+                <td style={{ padding: '12px' }}>{item.title}</td>
+                <td style={{ padding: '12px' }}>{item.type}</td>
+                <td style={{ padding: '12px' }}>{item.score}</td>
+              </tr>
+            ))}
+            {academicSummaryItems.length === 0 && (
+              <tr>
+                <td colSpan="3" style={{ padding: '12px', textAlign: 'center' }}>No academic records available.</td>
+              </tr>
+            )}
           </tbody>
         </table>
         </div>

@@ -7,6 +7,8 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 import LoadingSpinner from '../common/LoadingSpinner';
 
+import { formatDate } from '../../utils/formatters';
+
 export default function StudentProfile() {
   const { data: profile, isLoading, isError } = useStudentProfile();
   const updateProfileMutation = useUpdateStudentProfile();
@@ -144,7 +146,7 @@ export default function StudentProfile() {
             </tr>
             <tr>
               <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Date of Birth:</td>
-              <td style={{ padding: '8px 0' }}>{profile?.dateOfBirth || 'N/A'}</td>
+              <td style={{ padding: '8px 0' }}>{(profile?.dateOfBirth || profile?.dob) ? formatDate(profile.dateOfBirth || profile.dob) : 'N/A'}</td>
             </tr>
             <tr>
               <td style={{ padding: '8px 0', fontWeight: 'bold' }}>GitHub Link:</td>

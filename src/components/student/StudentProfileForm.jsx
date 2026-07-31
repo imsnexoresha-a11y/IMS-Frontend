@@ -4,6 +4,20 @@ import { useAuth } from '../../hooks/useAuth';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import FileUpload from '../common/FileUpload';
+import { formatDate } from '../../utils/formatters';
+
+const formatDobForInput = (dob) => {
+  if (!dob) return '';
+  if (typeof dob === 'string' && dob.includes('T')) {
+    return dob.split('T')[0];
+  }
+  return dob;
+};
+
+const formatDobForDisplay = (dob) => {
+  if (!dob) return 'Not provided';
+  return formatDate(dob);
+};
 
 export default function StudentProfileForm({ profile = {}, onSave }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -11,12 +25,14 @@ export default function StudentProfileForm({ profile = {}, onSave }) {
   const { updateUserImage, updateUser } = useAuth();
   const displayName = profile.user?.name || profile.name || 'Student';
 
+  const rawDob = profile.dateOfBirth || profile.dob || '';
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
       name: displayName,
       gitHubUrl: profile.gitHubUrl || profile.githubLink || '',
       linkedInUrl: profile.linkedInUrl || profile.linkedinLink || '',
-      dateOfBirth: profile.dateOfBirth || '',
+      dateOfBirth: formatDobForInput(rawDob),
       educationQualification: profile.educationQualification || '',
       instituteName: profile.instituteName || '',
       gender: profile.gender || '',
@@ -25,11 +41,12 @@ export default function StudentProfileForm({ profile = {}, onSave }) {
   });
 
   useEffect(() => {
+    const currentDob = profile.dateOfBirth || profile.dob || '';
     reset({
       name: displayName,
       gitHubUrl: profile.gitHubUrl || profile.githubLink || '',
       linkedInUrl: profile.linkedInUrl || profile.linkedinLink || '',
-      dateOfBirth: profile.dateOfBirth || '',
+      dateOfBirth: formatDobForInput(currentDob),
       educationQualification: profile.educationQualification || '',
       instituteName: profile.instituteName || '',
       gender: profile.gender || '',
@@ -118,7 +135,7 @@ export default function StudentProfileForm({ profile = {}, onSave }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
             <ReadOnlyField label="Full Name" value={displayName} />
-            <ReadOnlyField label="Date of Birth" value={profile.dateOfBirth || 'Not provided'} />
+            <ReadOnlyField label="Date of Birth" value={formatDobForDisplay(profile.dateOfBirth || profile.dob)} />
             <ReadOnlyLinkField label="GitHub" url={profile.githubLink || profile.gitHubUrl} />
             <ReadOnlyLinkField label="LinkedIn" url={profile.linkedinLink || profile.linkedInUrl} />
           </div>
