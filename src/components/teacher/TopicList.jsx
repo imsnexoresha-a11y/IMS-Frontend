@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, Check, Edit, Trash2, Paperclip, ArrowUpDown, Plus } from 'lucide-react';
+import { BookOpen, Check, Edit, Trash2, Paperclip, ArrowUpDown, Plus, Eye } from 'lucide-react';
 import {
   useTopics,
   useCreateTopic,
@@ -18,6 +18,7 @@ import { useToast } from '../common/Toast';
 import TopicForm from './TopicForm';
 import TopicReorderList from './TopicReorderList';
 import NotesUploadList from './NotesUploadList';
+import TopicDetailsModal from '../common/TopicDetailsModal';
 
 function getTopicId(topic) {
   return topic?._id || topic?.id || '';
@@ -44,6 +45,7 @@ export default function TopicList({ batchId }) {
   const [editingTopic, setEditingTopic] = useState(null);
   const [reorderOpen, setReorderOpen] = useState(false);
   const [notesTopic, setNotesTopic] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState(null);
 
   // Deletion Modal State
   const [topicToDelete, setTopicToDelete] = useState(null);
@@ -261,8 +263,8 @@ export default function TopicList({ batchId }) {
                 
                 <BookOpen size={20} style={{ color: 'var(--color-neutral)' }} />
                 
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 'var(--font-black)', fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>
+                <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => setSelectedTopic(topic)}>
+                  <div style={{ fontWeight: 'var(--font-black)', fontSize: 'var(--text-sm)', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {topic.title}
                   </div>
                   {topic.description && (
@@ -282,6 +284,13 @@ export default function TopicList({ batchId }) {
                     <Badge variant="neutral">In Progress</Badge>
                   )}
                   
+                  <IconButton
+                    icon={Eye}
+                    size="sm"
+                    label="View Details & Objectives"
+                    onClick={() => setSelectedTopic(topic)}
+                  />
+
                   <IconButton
                     icon={Paperclip}
                     size="sm"
@@ -394,6 +403,13 @@ export default function TopicList({ batchId }) {
         confirmLabel="Delete File"
         variant="danger"
         loading={deleteNoteMutation.isPending}
+      />
+
+      {/* Topic Details Modal */}
+      <TopicDetailsModal
+        topic={selectedTopic}
+        isOpen={Boolean(selectedTopic)}
+        onClose={() => setSelectedTopic(null)}
       />
     </div>
   );

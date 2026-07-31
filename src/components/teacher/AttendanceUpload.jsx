@@ -66,7 +66,7 @@ export function AttendanceCSVUpload({ batchId, initialLectureId = '' }) {
     try {
       parsed = JSON.parse(rawString);
     } catch (e) {
-      setImportError('Invalid JSON format. Please verify syntax.');
+      setImportError('Invalid JSON format. Booleans must be true or false without quotes (e.g. use "second_half": false instead of unquoted word "half").');
       return;
     }
 

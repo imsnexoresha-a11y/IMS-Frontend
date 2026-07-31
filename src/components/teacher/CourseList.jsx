@@ -100,8 +100,8 @@ export default function CourseList({ batchId }) {
                 <div style={{ fontWeight: 'var(--font-black)', fontSize: 'var(--text-md)', color: 'var(--color-text)' }}>
                   {course.name}
                 </div>
-                <div style={{ fontSize: 'var(--text-xxs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
-                  ID: {course._id || course.id}
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                  {course.description || 'Active Course Module'}
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Input from '../common/Input';
 import Textarea from '../common/Textarea';
 import Button from '../common/Button';
@@ -8,17 +8,23 @@ import FileUpload from '../common/FileUpload';
 export default function TeacherProfileForm({ profile = {}, onSave }) {
   const [profileImage, setProfileImage] = useState(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: {
-      name: profile.name || '',
-      email: profile.email || '',
-      phone: profile.phone || '',
-      specialization: profile.specialization || '',
-      designation: profile.designation || '',
-      bio: profile.bio || '',
-      linkedInUrl: profile.linkedInUrl || '',
-    }
+  const getProfileValues = (p) => ({
+    name: p.userId?.name || p.name || '',
+    email: p.userId?.email || p.email || '',
+    phone: p.userId?.mobileNo || p.phone || '',
+    specialization: p.specialization || p.subject || '',
+    designation: p.designation || '',
+    bio: p.bio || '',
+    linkedInUrl: p.linkedInUrl || '',
   });
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    defaultValues: getProfileValues(profile)
+  });
+
+  useEffect(() => {
+    reset(getProfileValues(profile));
+  }, [profile, reset]);
 
   const onSubmit = (formData) => {
     onSave({

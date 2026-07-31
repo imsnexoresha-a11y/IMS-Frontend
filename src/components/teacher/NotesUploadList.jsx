@@ -1,6 +1,14 @@
-import { FileText, Trash2, Check } from 'lucide-react';
+import { FileText, Trash2, Check, Eye, Download } from 'lucide-react';
 import FileUpload from '../common/FileUpload';
 import Button, { IconButton } from '../common/Button';
+import { downloadNoteFile } from '../../utils/fileDownloader';
+
+function getCleanFileName(urlOrName) {
+  if (!urlOrName) return 'Document';
+  let name = decodeURIComponent(urlOrName.substring(urlOrName.lastIndexOf('/') + 1));
+  name = name.replace(/^(\d+[-_]|notes-[-_\d]+)/i, '');
+  return name || 'Document';
+}
 
 export default function NotesUploadList({ notes = [], topicTitle = 'Topic', onUpload, onDeleteNote, onClose }) {
   const isLimitReached = notes.length >= 5;
@@ -15,51 +23,42 @@ export default function NotesUploadList({ notes = [], topicTitle = 'Topic', onUp
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
-          {notes.map((note) => (
-            <div key={note.id || note.fileId} style={{
-              display: 'flex', alignItems: 'center', gap: 'var(--space-sm)',
-              padding: 'var(--space-xs) var(--space-sm)', border: '2px solid var(--color-neutral)',
-              backgroundColor: 'var(--color-surface)',
-            }}>
-              <FileText size={16} style={{ color: 'var(--color-accent)' }} />
-              {note.id && (note.id.startsWith('http') || note.id.startsWith('/') || note.id.includes('.')) ? (
-                <a
-                  href={note.id.startsWith('http') ? note.id : `http://localhost:4000/${note.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    flex: 1,
-                    fontSize: 'var(--text-xs)',
-                    fontWeight: 'var(--font-black)',
-                    color: 'var(--color-text)',
-                    textDecoration: 'underline',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {note.filename || note.name}
-                </a>
-              ) : (
-                <span style={{ flex: 1, fontSize: 'var(--text-xs)', fontWeight: 'var(--font-semibold)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {note.filename || note.name}
+          {notes.map((note) => {
+            const rawUrl = note.id && (note.id.startsWith('http') || note.id.startsWith('/') || note.id.includes('.'))
+              ? (note.id.startsWith('http') ? note.id : `http://localhost:4000/${note.id}`)
+              : null;
+            const displayName = getCleanFileName(note.filename || note.name || note.id);
+
+            return (
+              <div key={note.id || note.fileId} style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--space-sm)',
+                padding: 'var(--space-xs) var(--space-sm)', border: '2px solid var(--color-neutral)',
+                backgroundColor: 'var(--color-surface)',
+              }}>
+                <FileText size={16} style={{ color: 'var(--color-accent)' }} />
+                <span style={{ flex: 1, fontSize: 'var(--text-xs)', fontWeight: 'var(--font-bold)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {displayName}
                 </span>
-              )}
-              {note.uploadedAt && (
-                <span style={{ fontSize: 'var(--text-xxs)', color: 'var(--color-text-secondary)' }}>
-                  {new Date(note.uploadedAt).toLocaleDateString()}
-                </span>
-              )}
-              <IconButton
-                icon={Trash2}
-                size="sm"
-                variant="danger"
-                label="Delete notes"
-                onClick={() => onDeleteNote?.(note.id || note.fileId)}
-              />
-            </div>
-          ))}
+
+                {rawUrl && (
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <Button variant="outline" size="sm" onClick={() => window.open(rawUrl, '_blank', 'noopener,noreferrer')}>
+                      <Eye size={12} style={{ marginRight: '2px' }} /> View
+                    </Button>
+                    <IconButton icon={Download} size="sm" label="Download Note" onClick={() => downloadNoteFile(rawUrl, displayName)} />
+                  </div>
+                )}
+
+                <IconButton
+                  icon={Trash2}
+                  size="sm"
+                  variant="danger"
+                  label="Delete notes"
+                  onClick={() => onDeleteNote?.(note.id || note.fileId)}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
       
@@ -95,4 +94,3 @@ export default function NotesUploadList({ notes = [], topicTitle = 'Topic', onUp
     </div>
   );
 }
-
