@@ -12,69 +12,45 @@ import {
 export default function RecruiterView() {
   const { uuid } = useParams();
 
-  const [selectedStudentId, setSelectedStudentId] =
-    useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
 
-  const { data, isLoading, error } =
-    useRecruiterStudents(uuid);
+  const { data, isLoading, error } = useRecruiterStudents(uuid);
 
-  const {
-    data: studentDetail,
-  } = useRecruiterStudent(
+  const { data: studentDetail } = useRecruiterStudent(
     uuid,
     selectedStudentId
   );
 
   if (!uuid) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
+    return <Navigate to="/login" replace />;
   }
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          padding: '40px',
-          textAlign: 'center',
-        }}
-      >
-        Loading...
+      <div style={{ padding: '60px', textAlign: 'center', fontWeight: 'var(--font-bold)' }}>
+        Loading batch portfolio...
       </div>
     );
   }
 
   if (error) {
     return (
-      <div
-        style={{
-          padding: '40px',
-          textAlign: 'center',
-        }}
-      >
-        {error.message}
+      <div style={{ padding: '60px', textAlign: 'center', color: 'var(--color-danger, #d73a49)' }}>
+        <h3>Unable to Load Portfolio</h3>
+        <p>{error.message || 'The recruiter link may be invalid or inactive.'}</p>
       </div>
     );
   }
 
-  const students =
-    data?.students || [];
-
-  const batchName =
-    data?.batchName ||
-    'Portfolio';
+  const students = Array.isArray(data) ? data : (data?.students || []);
+  const batchName = data?.batchName || 'Batch Portfolio';
 
   return (
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor:
-          'var(--color-bg)',
-        padding:
-          'var(--space-2xl)',
+        backgroundColor: 'var(--color-bg)',
+        padding: 'var(--space-2xl)',
       }}
     >
       <div
@@ -85,44 +61,30 @@ export default function RecruiterView() {
       >
         <div
           style={{
-            marginBottom:
-              'var(--space-2xl)',
+            marginBottom: 'var(--space-2xl)',
             textAlign: 'center',
           }}
         >
-          <h1>
+          <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-black)', marginBottom: 'var(--space-xs)' }}>
             {batchName}
           </h1>
 
-          <p>
-            Meet our latest
-            graduates.
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+            Meet our latest graduates and top performing interns.
           </p>
         </div>
 
         <RecruiterStudentList
           students={students}
-          onStudentClick={(
-            student
-          ) =>
-            setSelectedStudentId(
-              student.id
-            )
+          onStudentClick={(student) =>
+            setSelectedStudentId(student.id || student._id)
           }
         />
 
         <RecruiterStudentDetailModal
-          isOpen={
-            !!selectedStudentId
-          }
-          onClose={() =>
-            setSelectedStudentId(
-              null
-            )
-          }
-          student={
-            studentDetail?.student
-          }
+          isOpen={!!selectedStudentId}
+          onClose={() => setSelectedStudentId(null)}
+          student={studentDetail?.student || studentDetail}
         />
       </div>
     </div>
