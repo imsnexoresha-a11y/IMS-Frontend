@@ -108,19 +108,23 @@ function AdminQuizForm({
             />
 
             <Select
-                label="Lecture"
+                label="Lecture Session"
                 name="lectureId"
+                required
                 options={[
                     {
                         value: '',
-                        label: 'No lecture selected',
+                        label: 'Select lecture session',
                     },
                     ...lectures.map((lecture) => ({
-                        value: lecture.id,
+                        value: lecture.id || lecture._id,
                         label: lecture.title,
                     })),
                 ]}
-                {...register('lectureId')}
+                error={errors.lectureId?.message}
+                {...register('lectureId', {
+                    required: 'Lecture session is required',
+                })}
             />
 
             <Select
