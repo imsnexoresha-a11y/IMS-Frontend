@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import {
+    BarChart2,
     CalendarClock,
     CheckCircle,
     Clock,
@@ -14,6 +16,8 @@ import DataTable from '../../common/DataTable';
 import Badge from '../../common/Badge';
 import Button from '../../common/Button';
 import EmptyState from '../../common/EmptyState';
+import Modal from '../../common/Modal';
+import PerLectureSummaryCard from '../../teacher/PerLectureSummaryCard';
 
 import { formatDateTime } from '../../../utils/formatters';
 
@@ -60,6 +64,7 @@ export default function AdminLectureList({
     onDelete,
     onStatusChange,
 }) {
+    const [summaryLecture, setSummaryLecture] = useState(null);
     const topicMap = Object.fromEntries(
         topics.map((topic) => [topic.id, topic.title])
     );
@@ -188,6 +193,17 @@ export default function AdminLectureList({
                         }}
                         onClick={(event) => event.stopPropagation()}
                     >
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setSummaryLecture(row)}
+                            title="View Session Performance Summary"
+                            aria-label={`View summary for ${row.title}`}
+                        >
+                            <BarChart2 size={14} />
+                        </Button>
+
                         <Button
                             type="button"
                             variant="secondary"
@@ -335,6 +351,19 @@ export default function AdminLectureList({
                 data={lectures}
                 searchPlaceholder="Search lectures..."
             />
+
+            <Modal
+                isOpen={!!summaryLecture}
+                onClose={() => setSummaryLecture(null)}
+                title={`Summary: ${summaryLecture?.title || ''}`}
+                size="md"
+            >
+                {summaryLecture && (
+                    <PerLectureSummaryCard
+                        lecture={summaryLecture}
+                    />
+                )}
+            </Modal>
         </div>
     );
 }

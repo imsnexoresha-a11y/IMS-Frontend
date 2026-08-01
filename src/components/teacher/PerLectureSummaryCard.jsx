@@ -4,7 +4,8 @@ import { useLectureSummary } from '../../hooks/useLectures';
 
 export default function PerLectureSummaryCard({ batchId, lecture }) {
   const lectureId = lecture?.id || lecture?._id;
-  const { data: summaryData, isLoading, isError } = useLectureSummary(batchId, lectureId);
+  const resolvedBatchId = batchId || lecture?.batchId || 'batch-001';
+  const { data: summaryData, isLoading, isError } = useLectureSummary(resolvedBatchId, lectureId);
 
   if (isLoading) {
     return <div style={{ textAlign: 'center', padding: 'var(--space-md)' }}>Loading session summary...</div>;
